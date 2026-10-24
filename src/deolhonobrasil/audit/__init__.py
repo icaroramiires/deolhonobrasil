@@ -19,6 +19,7 @@ from deolhonobrasil.audit.rag_narrator import (
 )
 from deolhonobrasil.audit.rules import (
     AuditSignal,
+    compute_easter_sunday,
     evaluate_amendment_execution_divergence_rule,
     evaluate_benford_distribution_rule,
     evaluate_ceap_quota_outlier_rule,
@@ -26,11 +27,16 @@ from deolhonobrasil.audit.rules import (
     evaluate_contract_overpricing_rule,
     evaluate_duplicate_expense_document_rule,
     evaluate_monopolistic_supplier_category_rule,
+    evaluate_parliamentary_recess_expense_rule,
     evaluate_shared_cnpj_root_rule,
     evaluate_split_expense_rule,
     evaluate_supplier_concentration_rule,
     evaluate_temporal_geographic_overlap_rule,
+    evaluate_weekend_holiday_expense_rule,
     extract_cnpj_root,
+    get_brazilian_national_holidays,
+    is_parliamentary_recess,
+    is_weekend_or_holiday,
 )
 from deolhonobrasil.audit.statistics import (
     calculate_hhi_concentration,
@@ -58,9 +64,15 @@ __all__ = [
     "evaluate_contract_overpricing_rule",
     "evaluate_duplicate_expense_document_rule",
     "evaluate_monopolistic_supplier_category_rule",
+    "evaluate_parliamentary_recess_expense_rule",
     "evaluate_shared_cnpj_root_rule",
     "evaluate_split_expense_rule",
     "evaluate_supplier_concentration_rule",
     "evaluate_temporal_geographic_overlap_rule",
+    "evaluate_weekend_holiday_expense_rule",
     "extract_cnpj_root",
+    "get_brazilian_national_holidays",
+    "is_parliamentary_recess",
+    "is_weekend_or_holiday",
 ]
+

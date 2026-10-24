@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date, timedelta
 from decimal import Decimal
 
 from deolhonobrasil.audit.statistics import (
@@ -874,5 +875,222 @@ def evaluate_temporal_geographic_overlap_rule(
     return signals
 
 
+def compute_easter_sunday(year: int) -> date:
+    """Calcula a data do Domingo de Páscoa pelo Algoritmo Meeus/Butcher (calendário Gregoriano)."""
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
 
 
+def get_brazilian_national_holidays(year: int) -> set[date]:
+    """Retorna o conjunto de feriados nacionais brasileiros (fixos e móveis).
+
+    Feriados fixos federais (Leis nº 662/1949, 10.607/2002 e 14.759/2023):
+    - 01/01: Confraternização Universal
+    - 21/04: Tiradentes
+    - 01/05: Dia Mundial do Trabalho
+    - 07/09: Independência do Brasil
+    - 12/10: Nossa Senhora Aparecida
+    - 02/11: Finados
+    - 15/11: Proclamação da República
+    - 20/11: Dia Nacional de Zumbi e da Consciência Negra
+    - 25/12: Natal
+
+    Feriados móveis derivados da Páscoa:
+    - Carnaval (terça-feira): Páscoa - 47 dias
+    - Sexta-feira Santa (Paixão de Cristo): Páscoa - 2 dias
+    - Páscoa: Domingo de Páscoa
+    - Corpus Christi: Páscoa + 60 dias
+    """
+    fixed = {
+        date(year, 1, 1),
+        date(year, 4, 21),
+        date(year, 5, 1),
+        date(year, 9, 7),
+        date(year, 10, 12),
+        date(year, 11, 2),
+        date(year, 11, 15),
+        date(year, 11, 20),
+        date(year, 12, 25),
+    }
+    easter = compute_easter_sunday(year)
+    mobile = {
+        easter - timedelta(days=47),  # Terça-feira de Carnaval
+        easter - timedelta(days=2),   # Sexta-feira Santa
+        easter,                        # Páscoa
+        easter + timedelta(days=60),  # Corpus Christi
+    }
+    return fixed | mobile
+
+
+def is_weekend_or_holiday(d: date) -> tuple[bool, str]:
+    """Retorna se uma data é fim de semana (sábado/domingo) ou feriado nacional oficial."""
+    if d.weekday() == 5:
+        return True, "Sábado"
+    if d.weekday() == 6:
+        return True, "Domingo"
+    holidays = get_brazilian_national_holidays(d.year)
+    if d in holidays:
+        return True, "Feriado Nacional"
+    return False, ""
+
+
+def is_parliamentary_recess(d: date) -> tuple[bool, str]:
+    """Verifica se uma data recai nos períodos regimentais de recesso parlamentar (art. 57, CF/88)."""
+    if d.month == 7 and 18 <= d.day <= 31:
+        return True, "Recesso de Inverno (18 a 31 de julho)"
+    if (d.month == 12 and d.day >= 23) or (d.month == 1) or (d.month == 2 and d.day == 1):
+        return True, "Recesso de Verão (23 de dezembro a 1º de fevereiro)"
+    return False, ""
+
+
+def evaluate_weekend_holiday_expense_rule(
+    expenses: Sequence[CuratedPublicExpense],
+) -> list[AuditSignal]:
+    """Identifica despesas presenciais emitidas em fins de semana e feriados nacionais oficiais.
+
+    Código da Regra: R-TEMPORAL-WEEKEND-HOLIDAY
+    Classificação Epistêmica: STATISTICAL_ANOMALY
+    """
+    signals: list[AuditSignal] = []
+
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0") or not exp.issue_date:
+            continue
+        cat_upper = exp.expense_category.upper()
+        if not any(kw in cat_upper for kw in _PHYSICAL_PRESENCE_KEYWORDS):
+            continue
+
+        is_non_working, day_desc = is_weekend_or_holiday(exp.issue_date)
+        if not is_non_working:
+            continue
+
+        clean_agent = sanitize_untrusted_text(exp.public_agent_name, 80)
+        clean_id = sanitize_untrusted_text(exp.public_agent_id, 40)
+        clean_cat = sanitize_untrusted_text(exp.expense_category, 60)
+        date_str = exp.issue_date.isoformat()
+
+        title = f"Despesa presencial em dia não útil ({day_desc}) para {clean_agent}"
+        fact_summary = (
+            f"O agente {clean_agent} ({clean_id}) registrou despesa presencial de '{clean_cat}' "
+            f"no valor de R$ {exp.net_amount:.2f} emitida em {date_str} ({day_desc}), documento fiscal {exp.document_number}."
+        )
+        stat_summary = (
+            f"Emissão de despesa presencial em {day_desc.lower()}, dia atípico para atividades legislativas "
+            f"deliberativas ordinárias presenciais no Congresso Nacional."
+        )
+        scope_limit = (
+            "O exercício do mandato parlamentar estende-se aos finais de semana e feriados em razão de "
+            "reuniões comunitárias, visitas a municípios e representação partidária na base eleitoral, "
+            "sendo admitidas despesas indenizatórias compatíveis com o mandato."
+        )
+
+        sig_id = f"SIG-TMP-{compute_sha256_text(f'{exp.natural_key}:{date_str}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-TEMPORAL-WEEKEND-HOLIDAY",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                metric_name="is_non_working_day",
+                metric_value=Decimal("1.00"),
+                threshold_value=Decimal("0.00"),
+                audited_amount=exp.net_amount,
+                provenance_hashes=(exp.provenance.raw_batch_sha256,),
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
+def evaluate_parliamentary_recess_expense_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    recess_threshold_brl: Decimal = Decimal("15000.00"),
+    min_expense_count: int = 3,
+) -> list[AuditSignal]:
+    """Identifica concentrações de despesas públicas acumuladas durante recessos parlamentares constitucionais.
+
+    Código da Regra: R-TEMPORAL-PARLIAMENTARY-RECESS
+    Classificação Epistêmica: STATISTICAL_ANOMALY
+    """
+    groups: dict[tuple[str, str, str], list[CuratedPublicExpense]] = defaultdict(list)
+
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0") or not exp.issue_date or not exp.public_agent_id:
+            continue
+        is_recess, label = is_parliamentary_recess(exp.issue_date)
+        if not is_recess:
+            continue
+
+        d = exp.issue_date
+        if d.month == 7:
+            cycle_id = f"INVERNO_{d.year}"
+        elif d.month == 12:
+            cycle_id = f"VERAO_{d.year}_{d.year + 1}"
+        else:
+            cycle_id = f"VERAO_{d.year - 1}_{d.year}"
+
+        groups[(exp.public_agent_id, cycle_id, label)].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (agent_id, cycle_id, label), items in groups.items():
+        total_amount = sum(e.net_amount for e in items)
+        if total_amount < recess_threshold_brl or len(items) < min_expense_count:
+            continue
+
+        clean_agent = sanitize_untrusted_text(items[0].public_agent_name, 80)
+        clean_id = sanitize_untrusted_text(agent_id, 40)
+        unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in items}))
+
+        title = f"Concentração de despesas durante {label.split(' (')[0]} para {clean_agent}"
+        fact_summary = (
+            f"O agente {clean_agent} ({clean_id}) registrou {len(items)} despesas totalizando "
+            f"R$ {total_amount:.2f} durante o {label} no ciclo {cycle_id}."
+        )
+        stat_summary = (
+            f"Volume acumulado de R$ {total_amount:.2f} distribuído em {len(items)} reembolsos durante o "
+            f"período de recesso legislativo, superando o limiar de relevância de R$ {recess_threshold_brl:.2f}."
+        )
+        scope_limit = (
+            "A ocorrência de despesas no recesso constitucional não configura infração orçamentária por si só. "
+            "Atividades de gabinete, comunicação parlamentar, manutenção de escritórios estaduais e agendas em "
+            "bases eleitorais mantêm-se em funcionamento durante o período de suspensão das sessões plenárias."
+        )
+
+        sig_id = f"SIG-REC-{compute_sha256_text(f'{agent_id}:{cycle_id}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-TEMPORAL-PARLIAMENTARY-RECESS",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                metric_name="recess_accumulated_amount_brl",
+                metric_value=total_amount,
+                threshold_value=recess_threshold_brl,
+                audited_amount=total_amount,
+                provenance_hashes=unique_hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals

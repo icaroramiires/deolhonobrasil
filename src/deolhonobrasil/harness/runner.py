@@ -95,6 +95,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0008-benford-and-split-expense-rules", "data-model.md"),
         ("SPEC-0009-supplier-network-and-shared-patterns", "data-model.md"),
         ("SPEC-0010-duplicate-and-overlap-expenses", "data-model.md"),
+        ("SPEC-0011-temporal-recess-and-holiday-expenses", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:

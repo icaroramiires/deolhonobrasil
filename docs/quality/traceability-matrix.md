@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.7.0  
-**Status:** 100% Verificada (`SPEC-0001..0010`, `79/79` testes, `74/74` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.8.0  
+**Status:** 100% Verificada (`SPEC-0001..0011`, `83/83` testes, `78/78` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -19,6 +19,8 @@
 | **`SPEC-0008`** | [`docs/specs/SPEC-0008-benford-and-split-expense-rules/`](../specs/SPEC-0008-benford-and-split-expense-rules/spec.md) | `DONB-2`, `DONB-15` (`TASK-0801..0804`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0009`** | [`docs/specs/SPEC-0009-supplier-network-and-shared-patterns/`](../specs/SPEC-0009-supplier-network-and-shared-patterns/spec.md) | `DONB-2`, `DONB-16` (`TASK-0901..0904`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0010`** | [`docs/specs/SPEC-0010-duplicate-and-overlap-expenses/`](../specs/SPEC-0010-duplicate-and-overlap-expenses/spec.md) | `DONB-2`, `DONB-17` (`TASK-1001..1004`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0011`** | [`docs/specs/SPEC-0011-temporal-recess-and-holiday-expenses/`](../specs/SPEC-0011-temporal-recess-and-holiday-expenses/spec.md) | `DONB-2`, `DONB-18` (`TASK-1101..1104`) | **Verificado** (`4/4` Test Anchors verdes) |
+
 
 ---
 
@@ -61,6 +63,9 @@
 | `SPEC-0009` | `FR-021`, `DATA-011`, `SEC-012` | Regra de Concentração Monopolística por Categoria | `AC-036`, `AC-037` | `TASK-0903`, `TASK-0904` (`DONB-16`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_monopolistic_supplier_category_rule`) | `test_monopolistic_supplier_category_rule_detects_dominance` | **Verificado** |
 | `SPEC-0010` | `FR-022`, `DATA-012`, `SEC-013` | Regra de Reembolso Duplicado de Documento Fiscal | `AC-038`, `AC-039` | `TASK-1001`, `TASK-1002` (`DONB-17`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_duplicate_expense_document_rule`) | `test_duplicate_expense_document_rule_detects_identical_invoice`, `test_duplicate_expense_document_rule_ignores_generic_or_different_suppliers` | **Verificado** |
 | `SPEC-0010` | `FR-023`, `NFR-013`, `DATA-012`, `SEC-013` | Regra de Sobreposição Espaço-Temporal de Despesas Presenciais | `AC-040`, `AC-041` | `TASK-1003`, `TASK-1004` (`DONB-17`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_temporal_geographic_overlap_rule`) | `test_temporal_geographic_overlap_rule_detects_same_day_distinct_states`, `test_temporal_geographic_overlap_rule_ignores_same_state_or_online_categories` | **Verificado** |
+| `SPEC-0011` | `FR-024`, `DATA-013`, `SEC-014` | Regra de Despesas em Fins de Semana e Feriados Nacionais | `AC-042`, `AC-043` | `TASK-1101`, `TASK-1102` (`DONB-18`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_weekend_holiday_expense_rule`) | `test_weekend_holiday_expense_rule_detects_weekend_or_holiday`, `test_weekend_holiday_expense_rule_ignores_weekday_or_remote_category` | **Verificado** |
+| `SPEC-0011` | `FR-025`, `NFR-014`, `DATA-013`, `SEC-014` | Regra de Despesas Concentradas em Recesso Parlamentar | `AC-044`, `AC-045` | `TASK-1103`, `TASK-1104` (`DONB-18`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_parliamentary_recess_expense_rule`) | `test_parliamentary_recess_rule_detects_cluster_above_threshold`, `test_parliamentary_recess_rule_ignores_below_threshold_or_outside_recess` | **Verificado** |
+
 
 
 
