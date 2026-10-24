@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.4.0  
-**Status:** 100% Verificada (`SPEC-0001..0007`, `67/67` testes, `62/62` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.5.0  
+**Status:** 100% Verificada (`SPEC-0001..0008`, `71/71` testes, `66/66` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -16,6 +16,7 @@
 | **`SPEC-0005`** | [`docs/specs/SPEC-0005-live-http-collectors/`](../specs/SPEC-0005-live-http-collectors/spec.md) | `DONB-1`, `DONB-12` (`TASK-0501..0503`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0006`** | [`docs/specs/SPEC-0006-editorial-admin-and-evidence-bundle/`](../specs/SPEC-0006-editorial-admin-and-evidence-bundle/spec.md) | `DONB-2`, `DONB-13` (`TASK-0601..0603`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0007`** | [`docs/specs/SPEC-0007-cross-source-sanctions-and-divergence/`](../specs/SPEC-0007-cross-source-sanctions-and-divergence/spec.md) | `DONB-2`, `DONB-14` (`TASK-0701..0704`) | **Verificado** (`5/5` Test Anchors verdes) |
+| **`SPEC-0008`** | [`docs/specs/SPEC-0008-benford-and-split-expense-rules/`](../specs/SPEC-0008-benford-and-split-expense-rules/spec.md) | `DONB-2`, `DONB-15` (`TASK-0801..0804`) | **Verificado** (`4/4` Test Anchors verdes) |
 
 ---
 
@@ -52,5 +53,7 @@
 | `SPEC-0006` | `FR-015`, `DATA-008`, `NFR-009` | Evidence Bundle / SHA-256 | `AC-024`, `AC-025` | `TASK-0601`, `TASK-0603` (`DONB-13`) | `src/deolhonobrasil/governance/dossiers.py` (`VerifiableEvidenceBundle`), `src/deolhonobrasil/api/service.py` | `test_evidence_bundle_blocks_unreviewed_dossier_for_public_reader`, `test_verifiable_evidence_bundle_canonical_sha256_integrity` | **Verificado** |
 | `SPEC-0007` | `FR-016`, `DATA-009` | Conector CEIS/CNEP / Lakehouse / API | `AC-026`, `AC-029` | `TASK-0701`, `TASK-0703`, `TASK-0704` (`DONB-14`) | `src/deolhonobrasil/pipeline/models.py` (`CuratedSanctionRecord`), `cgu_transparencia.py`, `storage.py`, `api/service.py` | `test_ceis_cnep_connector_validates_masks_cpf_and_quarantines_invalid`, `test_lakehouse_and_api_sanctions_endpoint_roundtrip` | **Verificado** |
 | `SPEC-0007` | `FR-017`, `NFR-010`, `SEC-010` | Cruzamento CEIS/CNEP / Homonímia LGPD / Divergência | `AC-027`, `AC-028` | `TASK-0702` (`DONB-14`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_ceis_cnep_sanctioned_supplier_rule`, `evaluate_amendment_execution_divergence_rule`) | `test_cross_source_ceis_rule_detects_active_cnpj_sanction_with_dual_sha256`, `test_cross_source_ceis_rule_ignores_expired_sanction_or_masked_cpf_homonym`, `test_amendment_execution_divergence_rule_flags_discrepancy` | **Verificado** |
+| `SPEC-0008` | `FR-018`, `DATA-010`, `SEC-011` | Regra de Desvio Benford (MAD e Qui-Quadrado) | `AC-030`, `AC-031` | `TASK-0801`, `TASK-0803` (`DONB-15`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_benford_distribution_rule`), `statistics.py` | `test_benford_rule_detects_non_conformant_distribution_and_emits_signal`, `test_benford_rule_returns_none_for_conformant_or_small_sample` | **Verificado** |
+| `SPEC-0008` | `FR-019`, `NFR-011`, `DATA-010`, `SEC-011` | Regra de Fracionamento de Despesa / Janela Móvel | `AC-032`, `AC-033` | `TASK-0802`, `TASK-0804` (`DONB-15`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_split_expense_rule`) | `test_split_expense_rule_detects_clustering_within_rolling_window`, `test_split_expense_rule_ignores_isolated_transactions_or_below_aggregate_threshold` | **Verificado** |
 
 

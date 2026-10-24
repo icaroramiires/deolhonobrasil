@@ -19,8 +19,12 @@ from deolhonobrasil.audit.rag_narrator import (
 )
 from deolhonobrasil.audit.rules import (
     AuditSignal,
+    evaluate_amendment_execution_divergence_rule,
+    evaluate_benford_distribution_rule,
     evaluate_ceap_quota_outlier_rule,
+    evaluate_ceis_cnep_sanctioned_supplier_rule,
     evaluate_contract_overpricing_rule,
+    evaluate_split_expense_rule,
     evaluate_supplier_concentration_rule,
 )
 from deolhonobrasil.audit.statistics import (
@@ -41,8 +45,12 @@ __all__ = [
     "calculate_hhi_concentration",
     "calculate_mad_z_score",
     "calculate_z_score",
+    "evaluate_amendment_execution_divergence_rule",
+    "evaluate_benford_distribution_rule",
     "evaluate_benford_first_digit",
     "evaluate_ceap_quota_outlier_rule",
+    "evaluate_ceis_cnep_sanctioned_supplier_rule",
     "evaluate_contract_overpricing_rule",
+    "evaluate_split_expense_rule",
     "evaluate_supplier_concentration_rule",
 ]

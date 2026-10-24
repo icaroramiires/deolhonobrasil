@@ -92,6 +92,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0005-live-http-collectors", "data-model.md"),
         ("SPEC-0006-editorial-admin-and-evidence-bundle", "data-model.md"),
         ("SPEC-0007-cross-source-sanctions-and-divergence", "data-model.md"),
+        ("SPEC-0008-benford-and-split-expense-rules", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:

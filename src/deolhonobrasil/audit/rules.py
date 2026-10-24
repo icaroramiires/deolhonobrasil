@@ -14,7 +14,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
-from deolhonobrasil.audit.statistics import calculate_hhi_concentration, calculate_z_score
+from deolhonobrasil.audit.statistics import (
+    calculate_hhi_concentration,
+    calculate_z_score,
+    evaluate_benford_first_digit,
+)
 from deolhonobrasil.pipeline.models import (
     CuratedParliamentaryAmendment,
     CuratedPublicContract,
@@ -381,4 +385,168 @@ def evaluate_amendment_execution_divergence_rule(
         provenance_hashes=(amendment.provenance.raw_batch_sha256, amendment.natural_key),
         requires_human_review=True,
     )
+
+
+def evaluate_benford_distribution_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    context_label: str = "Conjunto de Despesas",
+    min_sample_size: int = 50,
+    mad_threshold: Decimal = Decimal("0.01500"),
+) -> AuditSignal | None:
+    """Avalia se a distribuição de primeiro dígito de despesas públicas desvia da Lei de Benford (`SPEC-0008`).
+
+    Código da Regra: R-STAT-BENFORD-DEVIATION
+    Critério: Amostra com ao menos min_sample_size despesas estritamente positivas e MAD > mad_threshold (Não Conforme).
+    """
+    positive_expenses = [e for e in expenses if e.net_amount > Decimal("0")]
+    if len(positive_expenses) < min_sample_size:
+        return None
+
+    amounts = [e.net_amount for e in positive_expenses]
+    try:
+        benford_res = evaluate_benford_first_digit(amounts)
+    except ValueError:
+        return None
+
+    mad = Decimal(str(benford_res["mad"]))
+    if mad <= mad_threshold:
+        return None
+
+    chi_sq = Decimal(str(benford_res["chi_square"]))
+    clean_context = sanitize_untrusted_text(context_label, 100)
+    total_audited = sum(amounts)
+    unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in positive_expenses}))
+
+    title = f"Desvio estatístico de primeiro dígito frente à Lei de Benford em {clean_context}"
+    fact_summary = (
+        f"Foram avaliadas {len(positive_expenses)} despesas públicas totalizando R$ {total_audited:.2f} "
+        f"no contexto {clean_context}."
+    )
+    stat_summary = (
+        f"O Desvio Médio Absoluto (MAD) do primeiro dígito foi de {mad} (Qui-Quadrado: {chi_sq}), "
+        f"superando o limiar de conformidade de {mad_threshold}."
+    )
+    scope_limit = (
+        "O desvio em relação à Lei de Benford aponta atipicidade na distribuição de dígitos, mas não comprova "
+        "irregularidade nem má-fé. Certas categorias de compras públicas possuem tabelas fixas, tarifas reguladas "
+        "ou tetos orçamentários que naturalmente concentram determinados valores."
+    )
+
+    return AuditSignal(
+        signal_id=f"SIG-BENFORD-{compute_sha256_text(f'{clean_context}:{mad}:{len(positive_expenses)}')[:16]}",
+        rule_code="R-STAT-BENFORD-DEVIATION",
+        title=title,
+        official_fact_summary=fact_summary,
+        statistical_inference_summary=stat_summary,
+        scope_limitation_summary=scope_limit,
+        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+        metric_name="benford_first_digit_mad",
+        metric_value=mad,
+        threshold_value=mad_threshold,
+        audited_amount=total_audited,
+        provenance_hashes=unique_hashes,
+        requires_human_review=True,
+    )
+
+
+def evaluate_split_expense_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    single_limit_threshold: Decimal = Decimal("50000.00"),
+    aggregate_threshold: Decimal = Decimal("100000.00"),
+    window_days: int = 90,
+    min_count: int = 3,
+) -> list[AuditSignal]:
+    """Identifica concentrações de despesas sucessivas para o mesmo fornecedor e órgão em janela móvel (`SPEC-0008`).
+
+    Código da Regra: R-SPLIT-EXPENSE-THRESHOLD
+    Critério: Transações com o mesmo órgão e fornecedor (CNPJ), cada uma <= single_limit_threshold,
+    acumulando total >= aggregate_threshold em um intervalo <= window_days com ao menos min_count compras.
+    """
+    groups: dict[tuple[str, str, str, str], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if (
+            exp.net_amount > Decimal("0")
+            and exp.net_amount <= single_limit_threshold
+            and exp.issue_date is not None
+            and exp.supplier_doc_normalized
+        ):
+            group_key = (
+                exp.organ_code,
+                exp.organ_name,
+                exp.supplier_doc_normalized,
+                exp.supplier_name,
+            )
+            groups[group_key].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (organ_code, organ_name, supplier_doc, supplier_name), items in groups.items():
+        if len(items) < min_count:
+            continue
+
+        sorted_items = sorted(items, key=lambda x: x.issue_date)
+        i = 0
+        n = len(sorted_items)
+        while i < n:
+            start_exp = sorted_items[i]
+            window_items: list[CuratedPublicExpense] = []
+            for j in range(i, n):
+                diff_days = (sorted_items[j].issue_date - start_exp.issue_date).days
+                if diff_days <= window_days:
+                    window_items.append(sorted_items[j])
+                else:
+                    break
+
+            if len(window_items) >= min_count:
+                window_total = sum(x.net_amount for x in window_items)
+                if window_total >= aggregate_threshold:
+                    clean_organ = sanitize_untrusted_text(organ_name, 80)
+                    clean_supplier = sanitize_untrusted_text(supplier_name, 80)
+                    clean_doc = sanitize_untrusted_text(supplier_doc, 20)
+                    start_date_str = window_items[0].issue_date.isoformat()
+                    end_date_str = window_items[-1].issue_date.isoformat()
+                    elapsed_days = (window_items[-1].issue_date - window_items[0].issue_date).days
+                    unique_hashes = tuple(sorted({x.provenance.raw_batch_sha256 for x in window_items}))
+
+                    title = f"Concentração de transações sequenciais próximas ao limiar de dispensa para {clean_supplier}"
+                    fact_summary = (
+                        f"Foram registradas {len(window_items)} despesas pelo órgão {clean_organ} "
+                        f"para o fornecedor {clean_supplier} ({clean_doc}) entre {start_date_str} e {end_date_str}, "
+                        f"com valores unitários inferiores a R$ {single_limit_threshold:.2f}."
+                    )
+                    stat_summary = (
+                        f"O somatório acumulado no intervalo de {elapsed_days} dias alcançou R$ {window_total:.2f}, "
+                        f"superando o patamar de referência de R$ {aggregate_threshold:.2f}."
+                    )
+                    scope_limit = (
+                        "A ocorrência de pagamentos parcelados para o mesmo fornecedor em curto intervalo requer "
+                        "verificação da natureza dos objetos contratados. Não há constatação de irregularidade quando as "
+                        "aquisições correspondem a objetos de naturezas distintas, compras emergenciais ou contratos continuados autorizados em lei."
+                    )
+
+                    sig_id = f"SIG-SPLIT-{compute_sha256_text(f'{organ_code}:{supplier_doc}:{start_date_str}:{len(window_items)}')[:16]}"
+                    signals.append(
+                        AuditSignal(
+                            signal_id=sig_id,
+                            rule_code="R-SPLIT-EXPENSE-THRESHOLD",
+                            title=title,
+                            official_fact_summary=fact_summary,
+                            statistical_inference_summary=stat_summary,
+                            scope_limitation_summary=scope_limit,
+                            epistemic_layer=EpistemicClassification.UNVALIDATED_HYPOTHESIS,
+                            metric_name="split_cumulative_amount",
+                            metric_value=window_total,
+                            threshold_value=aggregate_threshold,
+                            audited_amount=window_total,
+                            provenance_hashes=unique_hashes,
+                            requires_human_review=True,
+                        )
+                    )
+                    i += len(window_items)
+                    continue
+
+            i += 1
+
+    return signals
+
 
