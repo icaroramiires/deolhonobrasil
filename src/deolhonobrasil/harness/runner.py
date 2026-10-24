@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 50
+MIN_EXPECTED_UNIT_TESTS = 52
 _IN_HARNESS_TEST_DISCOVERY = False
 
 

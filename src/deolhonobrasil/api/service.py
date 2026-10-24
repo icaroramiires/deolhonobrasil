@@ -46,6 +46,7 @@ class APIResponse:
     status_code: int
     body: dict[str, object]
     headers: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_SECURITY_HEADERS))
+    raw_html: str | None = None
 
 
 class SlidingWindowRateLimiter:
@@ -310,6 +311,29 @@ class CivicAuditHTTPApp:
         upper_method = method.upper()
         clean_path = path.rstrip("/") or "/"
 
+        if upper_method == "GET" and clean_path in ("/", "/index.html", "/wireframe_de_olho_no_brasil.html"):
+            from pathlib import Path
+
+            repo_root = Path(__file__).resolve().parents[3]
+            wf_path = repo_root / "wireframe_de_olho_no_brasil.html"
+            if wf_path.exists():
+                html_text = wf_path.read_text(encoding="utf-8")
+                html_headers = dict(resp_headers)
+                html_headers["Content-Type"] = "text/html; charset=utf-8"
+                html_headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "font-src 'self' https://fonts.gstatic.com; "
+                    "script-src 'self' 'unsafe-inline'; "
+                    "frame-ancestors 'none'"
+                )
+                return APIResponse(
+                    status_code=200,
+                    body={"status": "ok", "content_type": "text/html"},
+                    headers=html_headers,
+                    raw_html=html_text,
+                )
+
         if upper_method == "GET" and clean_path == "/api/v1/health":
             code, payload = self.service.get_health()
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
@@ -395,6 +419,8 @@ class CivicAuditHTTPApp:
         }
         status_line = status_map.get(resp.status_code, f"{resp.status_code} OK")
         start_response(status_line, list(resp.headers.items()))
+        if resp.raw_html is not None:
+            return [resp.raw_html.encode("utf-8")]
         return [json.dumps(resp.body, ensure_ascii=False).encode("utf-8")]
 
 

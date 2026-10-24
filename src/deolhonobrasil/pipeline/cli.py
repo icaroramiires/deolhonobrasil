@@ -315,6 +315,29 @@ def main(argv: list[str] | None = None) -> int:
         help="Falha com código de saída != 0 se houver divergência contábil.",
     )
 
+    serve_cmd = subparsers.add_parser(
+        "serve",
+        help="Inicia o servidor HTTP full-stack servindo a interface achromatic-ledger e a API REST /api/v1/*.",
+    )
+    serve_cmd.add_argument(
+        "--data-dir",
+        type=Path,
+        default=Path("./data"),
+        help="Diretório base do Data Lakehouse.",
+    )
+    serve_cmd.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host de escuta (default: 127.0.0.1).",
+    )
+    serve_cmd.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Porta HTTP (default: 8000).",
+    )
+
     args = parser.parse_args(argv)
     if args.command in ("run-sample", "run-audit"):
         run_audit = getattr(args, "run_audit", False) or (args.command == "run-audit")
@@ -323,6 +346,24 @@ def main(argv: list[str] | None = None) -> int:
             verify_reconciliation=args.verify_reconciliation,
             run_audit=run_audit,
         )
+    if args.command == "serve":
+        from wsgiref.simple_server import make_server
+        from deolhonobrasil.api.service import CivicAuditAPIService, CivicAuditHTTPApp
+
+        run_sample_pipeline(
+            data_dir=args.data_dir,
+            verify_reconciliation=True,
+            run_audit=True,
+        )
+        storage = CivicLakehouseStorage(data_dir=args.data_dir)
+        service = CivicAuditAPIService(storage=storage)
+        app = CivicAuditHTTPApp(service=service)
+        print(
+            f"De Olho no Brasil (UI + REST API) ativo em http://{args.host}:{args.port}/",
+            flush=True,
+        )
+        with make_server(args.host, args.port, app) as httpd:
+            httpd.serve_forever()
     return 0
 
 

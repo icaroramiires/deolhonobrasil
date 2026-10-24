@@ -267,6 +267,91 @@ class TestCivicAuditRESTAPI(unittest.TestCase):
         self.assertEqual(r3.status_code, 429)
         self.assertIn("Retry-After", r3.headers)
 
+    def test_root_serves_interactive_html_interface(self) -> None:
+        resp = self.app.handle_request(method="GET", path="/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("text/html", resp.headers["Content-Type"])
+        self.assertIsNotNone(resp.raw_html)
+        assert resp.raw_html is not None
+        self.assertIn("[DADO OFICIAL]", resp.raw_html)
+        self.assertIn("/api/v1/right-of-reply", resp.raw_html)
+
+    def test_live_http_server_e2e_ui_and_api_roundtrip(self) -> None:
+        import io
+        import json as _json
+
+        dossier = self._seed_sample_dossier_in_triage()
+        published = approve_dossier_for_publication(
+            dossier=dossier,
+            reviewer_id="rev_e2e_01",
+            timestamp_utc="2026-10-23T15:00:00Z",
+        )
+        self.storage.upsert_dossier(published, actor_id="rev_e2e_01")
+
+        def _call_wsgi(
+            method: str,
+            path: str,
+            query_string: str = "",
+            json_payload: dict[str, object] | None = None,
+        ) -> tuple[str, dict[str, str], bytes]:
+            captured_status: list[str] = []
+            captured_headers: list[tuple[str, str]] = []
+
+            def _start_response(status: str, headers: list[tuple[str, str]]) -> None:
+                captured_status.append(status)
+                captured_headers.extend(headers)
+
+            body_bytes = (
+                _json.dumps(json_payload).encode("utf-8")
+                if json_payload is not None
+                else b""
+            )
+            environ = {
+                "REQUEST_METHOD": method,
+                "PATH_INFO": path,
+                "QUERY_STRING": query_string,
+                "REMOTE_ADDR": "127.0.0.1",
+                "CONTENT_LENGTH": str(len(body_bytes)),
+                "wsgi.input": io.BytesIO(body_bytes),
+            }
+            chunks = self.app(environ, _start_response)
+            return captured_status[0], dict(captured_headers), b"".join(chunks)
+
+        # 1. GET / serves full HTML UI via PEP 3333 WSGI
+        ui_status, ui_headers, ui_bytes = _call_wsgi("GET", "/")
+        self.assertEqual(ui_status, "200 OK")
+        self.assertIn("text/html", ui_headers["Content-Type"])
+        ui_html = ui_bytes.decode("utf-8")
+        self.assertIn("De Olho no Brasil", ui_html)
+        self.assertIn("/api/v1/right-of-reply", ui_html)
+
+        # 2. GET /api/v1/dossiers returns the published dossier via WSGI
+        dos_status, _dos_headers, dos_bytes = _call_wsgi("GET", "/api/v1/dossiers")
+        self.assertEqual(dos_status, "200 OK")
+        dos_payload = _json.loads(dos_bytes.decode("utf-8"))
+        self.assertEqual(dos_payload["total"], 1)
+        self.assertEqual(dos_payload["items"][0]["dossier_id"], "DOS-API-TEST-001")
+
+        # 3. POST /api/v1/right-of-reply persists protocol in SQLite and masks CPF via WSGI
+        post_status, _post_headers, post_bytes = _call_wsgi(
+            "POST",
+            "/api/v1/right-of-reply",
+            json_payload={
+                "dossier_id": "DOS-API-TEST-001",
+                "respondent_name": "Instituto Brasiliense de Gestão (Via UI)",
+                "respondent_document": "123.456.789-09",
+                "institutional_email_domain": "senado.leg.br",
+                "statement_text": "Nota técnica oficial protocolada na interface com relatórios atuariais anexos.",
+                "attachment_sha256": "4a7d1ed414474e4033ac29ccb8653d9b4a7d1ed414474e4033ac29ccb8653d9b",
+            },
+        )
+        self.assertEqual(post_status, "201 Created")
+        post_resp = _json.loads(post_bytes.decode("utf-8"))
+        self.assertEqual(
+            post_resp["respondent_document_masked_or_cnpj"], "***.456.789-**"
+        )
+        self.assertTrue(post_resp["equal_visual_prominence"])
+
 
 class TestDevSecOpsAndCICDArtifacts(unittest.TestCase):
     """Verifies Checkpoint 4 reproducible container and CI/CD artifacts (`NFR-007`)."""

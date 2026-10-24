@@ -76,6 +76,8 @@ Cidadãos, jornalistas e pesquisadores precisam consultar dossiês revisados, de
 - `tests/test_api_and_ops.py::TestCivicAuditRESTAPI::test_post_right_of_reply_creates_protocol_and_masks_cpf`
 - `tests/test_api_and_ops.py::TestCivicAuditRESTAPI::test_post_right_of_reply_blocks_accusatory_and_sanitizes_injection`
 - `tests/test_api_and_ops.py::TestCivicAuditRESTAPI::test_rate_limiter_blocks_excessive_requests_with_429`
+- `tests/test_api_and_ops.py::TestCivicAuditRESTAPI::test_root_serves_interactive_html_interface`
+- `tests/test_api_and_ops.py::TestCivicAuditRESTAPI::test_live_http_server_e2e_ui_and_api_roundtrip`
 - `tests/test_api_and_ops.py::TestDevSecOpsAndCICDArtifacts::test_dockerfile_compose_and_github_ci_exist_and_run_harness`
 
 ## 16. Questões Pendentes
