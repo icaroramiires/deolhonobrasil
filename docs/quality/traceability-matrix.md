@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.6.0  
-**Status:** 100% Verificada (`SPEC-0001..0009`, `75/75` testes, `70/70` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.7.0  
+**Status:** 100% Verificada (`SPEC-0001..0010`, `79/79` testes, `74/74` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -18,6 +18,7 @@
 | **`SPEC-0007`** | [`docs/specs/SPEC-0007-cross-source-sanctions-and-divergence/`](../specs/SPEC-0007-cross-source-sanctions-and-divergence/spec.md) | `DONB-2`, `DONB-14` (`TASK-0701..0704`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0008`** | [`docs/specs/SPEC-0008-benford-and-split-expense-rules/`](../specs/SPEC-0008-benford-and-split-expense-rules/spec.md) | `DONB-2`, `DONB-15` (`TASK-0801..0804`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0009`** | [`docs/specs/SPEC-0009-supplier-network-and-shared-patterns/`](../specs/SPEC-0009-supplier-network-and-shared-patterns/spec.md) | `DONB-2`, `DONB-16` (`TASK-0901..0904`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0010`** | [`docs/specs/SPEC-0010-duplicate-and-overlap-expenses/`](../specs/SPEC-0010-duplicate-and-overlap-expenses/spec.md) | `DONB-2`, `DONB-17` (`TASK-1001..1004`) | **Verificado** (`4/4` Test Anchors verdes) |
 
 ---
 
@@ -58,5 +59,8 @@
 | `SPEC-0008` | `FR-019`, `NFR-011`, `DATA-010`, `SEC-011` | Regra de Fracionamento de Despesa / Janela Móvel | `AC-032`, `AC-033` | `TASK-0802`, `TASK-0804` (`DONB-15`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_split_expense_rule`) | `test_split_expense_rule_detects_clustering_within_rolling_window`, `test_split_expense_rule_ignores_isolated_transactions_or_below_aggregate_threshold` | **Verificado** |
 | `SPEC-0009` | `FR-020`, `NFR-012`, `DATA-011`, `SEC-012` | Extração de Raiz CNPJ e Regra de Filiais do Mesmo Grupo | `AC-034`, `AC-035` | `TASK-0901`, `TASK-0902` (`DONB-16`) | `src/deolhonobrasil/audit/rules.py` (`extract_cnpj_root`, `evaluate_shared_cnpj_root_rule`) | `test_extract_cnpj_root_validates_14_digits_and_rejects_cpf`, `test_shared_cnpj_root_rule_detects_multiple_branches_for_same_organ`, `test_shared_cnpj_root_rule_ignores_single_branch_or_unrelated_cnpjs` | **Verificado** |
 | `SPEC-0009` | `FR-021`, `DATA-011`, `SEC-012` | Regra de Concentração Monopolística por Categoria | `AC-036`, `AC-037` | `TASK-0903`, `TASK-0904` (`DONB-16`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_monopolistic_supplier_category_rule`) | `test_monopolistic_supplier_category_rule_detects_dominance` | **Verificado** |
+| `SPEC-0010` | `FR-022`, `DATA-012`, `SEC-013` | Regra de Reembolso Duplicado de Documento Fiscal | `AC-038`, `AC-039` | `TASK-1001`, `TASK-1002` (`DONB-17`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_duplicate_expense_document_rule`) | `test_duplicate_expense_document_rule_detects_identical_invoice`, `test_duplicate_expense_document_rule_ignores_generic_or_different_suppliers` | **Verificado** |
+| `SPEC-0010` | `FR-023`, `NFR-013`, `DATA-012`, `SEC-013` | Regra de Sobreposição Espaço-Temporal de Despesas Presenciais | `AC-040`, `AC-041` | `TASK-1003`, `TASK-1004` (`DONB-17`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_temporal_geographic_overlap_rule`) | `test_temporal_geographic_overlap_rule_detects_same_day_distinct_states`, `test_temporal_geographic_overlap_rule_ignores_same_state_or_online_categories` | **Verificado** |
+
 
 

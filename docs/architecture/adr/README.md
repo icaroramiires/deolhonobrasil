@@ -15,3 +15,4 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0007](0007-cross-source-ceis-cnep-sanctions-and-divergence-rules.md) | Cruzamento Multicritério CEIS/CNEP, Divergência entre Fontes e Prevenção de Homonímia LGPD | Aceito | 2026-10-23 | `SPEC-0007` |
 | [ADR-0008](0008-benford-distribution-and-split-expense-audit-rules.md) | Detecção de Fracionamento de Despesas e Avaliação da Lei de Benford em Lotes | Aceito | 2026-10-24 | `SPEC-0008` |
 | [ADR-0009](0009-shared-cnpj-root-and-corporate-group-audit-rules.md) | Detecção de Vínculo Societário por Radical de CNPJ Compartilhado e Monopólio de Fornecedores | Aceito | 2026-10-24 | `SPEC-0009` |
+| [ADR-0010](0010-duplicate-document-and-spatiotemporal-overlap-rules.md) | Detecção de Documentos Fiscais em Duplicidade e Sobreposição Espaço-Temporal | Aceito | 2026-10-24 | `SPEC-0010` |

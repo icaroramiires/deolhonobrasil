@@ -24,10 +24,12 @@ from deolhonobrasil.audit.rules import (
     evaluate_ceap_quota_outlier_rule,
     evaluate_ceis_cnep_sanctioned_supplier_rule,
     evaluate_contract_overpricing_rule,
+    evaluate_duplicate_expense_document_rule,
     evaluate_monopolistic_supplier_category_rule,
     evaluate_shared_cnpj_root_rule,
     evaluate_split_expense_rule,
     evaluate_supplier_concentration_rule,
+    evaluate_temporal_geographic_overlap_rule,
     extract_cnpj_root,
 )
 from deolhonobrasil.audit.statistics import (
@@ -54,9 +56,11 @@ __all__ = [
     "evaluate_ceap_quota_outlier_rule",
     "evaluate_ceis_cnep_sanctioned_supplier_rule",
     "evaluate_contract_overpricing_rule",
+    "evaluate_duplicate_expense_document_rule",
     "evaluate_monopolistic_supplier_category_rule",
     "evaluate_shared_cnpj_root_rule",
     "evaluate_split_expense_rule",
     "evaluate_supplier_concentration_rule",
+    "evaluate_temporal_geographic_overlap_rule",
     "extract_cnpj_root",
 ]

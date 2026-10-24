@@ -710,4 +710,169 @@ def evaluate_monopolistic_supplier_category_rule(
     return signals
 
 
+_GENERIC_DOC_NUMBERS: frozenset[str] = frozenset({
+    "",
+    "S/N",
+    "SN",
+    "0",
+    "-",
+    "--",
+    "SEM NUMERO",
+    "SEM NÚMERO",
+    "NAO INFORMADO",
+    "NÃO INFORMADO",
+})
+
+_PHYSICAL_PRESENCE_KEYWORDS: tuple[str, ...] = (
+    "COMBUSTIVEL",
+    "COMBUSTÍVEL",
+    "ALIMENTACAO",
+    "ALIMENTAÇÃO",
+    "HOSPEDAGEM",
+    "HOTEL",
+    "LOCACAO DE VEICULO",
+    "LOCAÇÃO DE VEÍCULO",
+    "LOCACAO DE VEICULOS",
+    "LOCAÇÃO DE VEÍCULOS",
+    "TAXI",
+    "TÁXI",
+    "REFEICAO",
+    "REFEIÇÃO",
+    "ABASTECIMENTO",
+)
+
+
+def evaluate_duplicate_expense_document_rule(
+    expenses: Sequence[CuratedPublicExpense],
+) -> list[AuditSignal]:
+    """Identifica reembolsos em duplicidade do mesmo documento fiscal para o mesmo fornecedor (`SPEC-0010`).
+
+    Código da Regra: R-DUPLICATE-EXPENSE-DOCUMENT
+    """
+    groups: dict[tuple[str, str], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0"):
+            continue
+        clean_doc = exp.document_number.strip().upper()
+        if clean_doc in _GENERIC_DOC_NUMBERS or len(clean_doc) < 2:
+            continue
+        if not exp.supplier_doc_normalized:
+            continue
+        groups[(exp.supplier_doc_normalized, clean_doc)].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (supplier_doc, doc_number), items in groups.items():
+        if len(items) < 2:
+            continue
+
+        total_amount = sum(e.net_amount for e in items)
+        clean_supplier = sanitize_untrusted_text(items[0].supplier_name, 80)
+        clean_doc_num = sanitize_untrusted_text(doc_number, 50)
+        unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in items}))
+
+        title = f"Reembolso de documento fiscal em duplicidade para {clean_supplier}"
+        fact_summary = (
+            f"Foram registradas {len(items)} despesas com o mesmo documento {clean_doc_num} "
+            f"do fornecedor {clean_supplier} ({supplier_doc}), totalizando R$ {total_amount:.2f}."
+        )
+        stat_summary = (
+            f"Identificadas {len(items)} ocorrências idênticas de comprovação fiscal para o "
+            f"mesmo favorecido na base pública."
+        )
+        scope_limit = (
+            "Documentos com mesma numeração podem decorrer de séries fiscais distintas não informadas "
+            "no cadastro, reemissão com estorno contábil registrado separadamente no SIAFI ou erro "
+            "material do emissor da nota fiscal."
+        )
+
+        sig_id = f"SIG-DUPDOC-{compute_sha256_text(f'{supplier_doc}:{clean_doc_num}:{len(items)}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-DUPLICATE-EXPENSE-DOCUMENT",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                metric_name="duplicate_document_count",
+                metric_value=Decimal(str(len(items))),
+                threshold_value=Decimal("1.00"),
+                audited_amount=total_amount,
+                provenance_hashes=unique_hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
+def evaluate_temporal_geographic_overlap_rule(
+    expenses: Sequence[CuratedPublicExpense],
+) -> list[AuditSignal]:
+    """Identifica despesas presenciais concomitantes em UFs distintas para o mesmo agente na mesma data (`SPEC-0010`).
+
+    Código da Regra: R-TEMPORAL-GEOGRAPHIC-OVERLAP
+    """
+    groups: dict[tuple[str, date], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0") or not exp.issue_date or not exp.state_uf or exp.state_uf == "BR":
+            continue
+        cat_upper = exp.expense_category.upper()
+        if not any(kw in cat_upper for kw in _PHYSICAL_PRESENCE_KEYWORDS):
+            continue
+        groups[(exp.public_agent_id, exp.issue_date)].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (agent_id, dt), items in groups.items():
+        distinct_states = {e.state_uf for e in items}
+        if len(distinct_states) < 2:
+            continue
+
+        total_amount = sum(e.net_amount for e in items)
+        clean_agent = sanitize_untrusted_text(items[0].public_agent_name, 80)
+        clean_id = sanitize_untrusted_text(agent_id, 40)
+        states_str = ", ".join(sorted(distinct_states))
+        date_str = dt.isoformat()
+        unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in items}))
+
+        title = f"Despesas presenciais concomitantes em UFs distintas para {clean_agent}"
+        fact_summary = (
+            f"O agente {clean_agent} ({clean_id}) registrou {len(items)} despesas presenciais em estados distintos "
+            f"({states_str}) na data {date_str}, totalizando R$ {total_amount:.2f}."
+        )
+        stat_summary = (
+            f"Concomitância de despesas com presença física exigida em {len(distinct_states)} UFs na mesma data."
+        )
+        scope_limit = (
+            "A concomitância de despesas em diferentes estados na mesma data pode corresponder a atividades "
+            "executadas por assessores autorizados do gabinete parlamentar em missões oficiais simultâneas sob "
+            "o mesmo registro orçamentário do titular."
+        )
+
+        sig_id = f"SIG-GEO-{compute_sha256_text(f'{agent_id}:{date_str}:{states_str}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-TEMPORAL-GEOGRAPHIC-OVERLAP",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                metric_name="distinct_states_same_day_count",
+                metric_value=Decimal(str(len(distinct_states))),
+                threshold_value=Decimal("1.00"),
+                audited_amount=total_amount,
+                provenance_hashes=unique_hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
+
 

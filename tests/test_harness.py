@@ -21,8 +21,8 @@ class TestLoopEngineeringHarness(unittest.TestCase):
     def test_openspec_traceability_gate_passes_and_resolves_anchors(self) -> None:
         result = verify_openspec_traceability(REPO_ROOT)
         self.assertTrue(result.passed, f"SDD Spec violations: {result.violations}")
-        self.assertEqual(result.metrics["capabilities_checked"], 9)
-        self.assertEqual(result.metrics["sdd_artifacts_verified"], 54)
+        self.assertEqual(result.metrics["capabilities_checked"], 10)
+        self.assertEqual(result.metrics["sdd_artifacts_verified"], 60)
         self.assertGreaterEqual(int(result.metrics["unique_requirements"]), 45)
         self.assertGreaterEqual(int(result.metrics["verified_test_anchors"]), 60)
 
