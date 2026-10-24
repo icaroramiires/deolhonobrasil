@@ -21,6 +21,7 @@ from deolhonobrasil.audit.statistics import (
     evaluate_benford_first_digit,
 )
 from deolhonobrasil.pipeline.models import (
+    CuratedElectoralDonation,
     CuratedParliamentaryAmendment,
     CuratedPublicContract,
     CuratedPublicExpense,
@@ -1089,6 +1090,87 @@ def evaluate_parliamentary_recess_expense_rule(
                 threshold_value=recess_threshold_brl,
                 audited_amount=total_amount,
                 provenance_hashes=unique_hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
+def evaluate_electoral_donor_supplier_crossmatch_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    donations: Sequence[CuratedElectoralDonation],
+) -> list[AuditSignal]:
+    """Identifica quando um fornecedor de despesa pública consta como doador declarado de campanha eleitoral do mandatário.
+
+    Código da Regra: R-CROSS-ELECTORAL-DONOR-SUPPLIER
+    Classificação Epistêmica: CROSS_SOURCE_DIVERGENCE
+    """
+    donations_map: dict[tuple[str, str], list[CuratedElectoralDonation]] = defaultdict(list)
+    for don in donations:
+        if don.donor_doc_type != "CNPJ" or len(don.donor_doc_normalized) != 14:
+            continue
+        donations_map[(don.candidate_id, don.donor_doc_normalized)].append(don)
+
+    matched_expenses: dict[tuple[str, str], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0") or not exp.public_agent_id or not exp.supplier_doc_normalized:
+            continue
+        if exp.supplier_doc_type != "CNPJ" or len(exp.supplier_doc_normalized) != 14:
+            continue
+        pair = (exp.public_agent_id, exp.supplier_doc_normalized)
+        if pair in donations_map:
+            matched_expenses[pair].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (agent_id, sup_doc), exp_items in matched_expenses.items():
+        don_items = donations_map[(agent_id, sup_doc)]
+        total_donated = sum(d.donation_amount for d in don_items)
+        total_disbursed = sum(e.net_amount for e in exp_items)
+
+        clean_agent = sanitize_untrusted_text(exp_items[0].public_agent_name, 80)
+        clean_id = sanitize_untrusted_text(agent_id, 40)
+        clean_supplier = sanitize_untrusted_text(exp_items[0].supplier_name, 120)
+
+        dual_hashes = tuple(
+            sorted(
+                {d.provenance.raw_batch_sha256 for d in don_items}
+                | {e.provenance.raw_batch_sha256 for e in exp_items}
+            )
+        )
+
+        title = f"Fornecedor identificado como doador de campanha eleitoral para {clean_agent}"
+        fact_summary = (
+            f"O fornecedor {clean_supplier} ({sup_doc}) consta na prestação de contas do TSE com doação declarada "
+            f"de R$ {total_donated:.2f} para o agente público {clean_agent} ({clean_id}) e posteriormente recebeu "
+            f"R$ {total_disbursed:.2f} em {len(exp_items)} reembolsos de despesa pública."
+        )
+        stat_summary = (
+            f"Convergência cadastral e financeira entre doação eleitoral e recebimento de recursos da cota/contrato "
+            f"pelo mesmo CNPJ ({sup_doc}) no valor de R$ {total_disbursed:.2f}."
+        )
+        scope_limit = (
+            "Doações de campanha eleitoral declaradas perante o TSE e prestação de serviços ou fornecimento para "
+            "gabinetes parlamentares são atos legais regulamentados. O apontamento reflete cruzamento objetivo entre fontes "
+            "oficiais distintas, não constituindo presunção de irregularidade, favoritismo indevido ou ilicitude."
+        )
+
+        sig_id = f"SIG-ELC-{compute_sha256_text(f'{agent_id}:{sup_doc}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-CROSS-ELECTORAL-DONOR-SUPPLIER",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                metric_name="electoral_donation_amount_brl",
+                metric_value=total_donated,
+                threshold_value=Decimal("0.00"),
+                audited_amount=total_disbursed,
+                provenance_hashes=dual_hashes,
                 requires_human_review=True,
             )
         )

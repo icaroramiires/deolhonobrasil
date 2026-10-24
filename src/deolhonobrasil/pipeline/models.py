@@ -32,6 +32,7 @@ class OfficialSource(StrEnum):
     PNCP_CONTRATOS = "PNCP_CONTRATOS"
     RFB_CNPJ = "RFB_CNPJ"
     IBGE_LOCALIDADES = "IBGE_LOCALIDADES"
+    TSE_ELEICOES = "TSE_ELEICOES"
 
 
 class EpistemicClassification(StrEnum):
@@ -409,7 +410,76 @@ class CuratedSanctionRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class CuratedElectoralDonation:
+    """Registro padronizado de doação eleitoral declarada (TSE / `SPEC-0012`)."""
+
+    natural_key: str
+    election_year: int
+    candidate_id: str
+    candidate_name: str
+    candidate_office: str
+    donor_doc_normalized: str
+    donor_doc_type: str
+    donor_name: str
+    donation_amount: Decimal
+    donation_date: date | None
+    receipt_number: str
+    provenance: ProvenanceMetadata
+
+    @classmethod
+    def create_validated(
+        cls,
+        *,
+        election_year: int,
+        candidate_id: str,
+        candidate_name: str,
+        candidate_office: str,
+        donor_raw_doc: str,
+        donor_name: str,
+        donation_amount_raw: str | Decimal,
+        donation_date: date | None,
+        receipt_number: str,
+        provenance: ProvenanceMetadata,
+    ) -> CuratedElectoralDonation:
+        clean_cand_id = sanitize_untrusted_text(candidate_id, 50)
+        clean_cand_name = sanitize_untrusted_text(candidate_name, 200)
+        clean_office = sanitize_untrusted_text(candidate_office, 100)
+        clean_receipt = sanitize_untrusted_text(receipt_number, 80)
+        clean_donor_name = sanitize_untrusted_text(donor_name, 250)
+
+        if not clean_cand_id or not clean_cand_name:
+            raise ValueError("Identificador e nome do candidato são obrigatórios.")
+        if not clean_receipt:
+            raise ValueError("Número do recibo eleitoral é obrigatório.")
+
+        doc_norm, doc_type = normalize_and_protect_document(donor_raw_doc)
+        parsed_amount = parse_strict_monetary_value(donation_amount_raw, "donation_amount")
+        if parsed_amount <= Decimal("0"):
+            raise ValueError("Valor da doação deve ser estritamente positivo.")
+
+        natural_key = compute_sha256_text(
+            f"{provenance.source.value}|{election_year}|{clean_cand_id}|{clean_receipt}|{doc_norm}"
+        )
+
+        return cls(
+            natural_key=natural_key,
+            election_year=int(election_year),
+            candidate_id=clean_cand_id,
+            candidate_name=clean_cand_name,
+            candidate_office=clean_office or "N/A",
+            donor_doc_normalized=doc_norm,
+            donor_doc_type=doc_type,
+            donor_name=clean_donor_name or "DOADOR NÃO IDENTIFICADO",
+            donation_amount=parsed_amount,
+            donation_date=donation_date,
+            receipt_number=clean_receipt,
+            provenance=provenance,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class QuarantinedRecord:
+
     """Registro isolado em quarentena por falha de validação de schema ou integridade (Seção 8)."""
 
     quarantine_id: str

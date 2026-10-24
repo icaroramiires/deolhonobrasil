@@ -17,4 +17,6 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0009](0009-shared-cnpj-root-and-corporate-group-audit-rules.md) | Detecção de Vínculo Societário por Radical de CNPJ Compartilhado e Monopólio de Fornecedores | Aceito | 2026-10-24 | `SPEC-0009` |
 | [ADR-0010](0010-duplicate-document-and-spatiotemporal-overlap-rules.md) | Detecção de Documentos Fiscais em Duplicidade e Sobreposição Espaço-Temporal | Aceito | 2026-10-24 | `SPEC-0010` |
 | [ADR-0011](0011-temporal-recess-and-holiday-expense-audit-rules.md) | Detecção de Despesas em Fins de Semana, Feriados Nacionais e Recessos Parlamentares | Aceito | 2026-10-24 | `SPEC-0011` |
+| [ADR-0012](0012-electoral-campaign-donations-crossmatch.md) | Cruzamento entre Fornecedores Públicos e Doadores de Campanha Eleitoral (TSE) | Aceito | 2026-10-24 | `SPEC-0012` |
+
 
