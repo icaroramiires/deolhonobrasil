@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.1.0  
-**Status:** 100% Verificada (`SPEC-0001..0004`, `50/50` testes, `45/45` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.2.0  
+**Status:** 100% Verificada (`SPEC-0001..0005`, `57/57` testes, `52/52` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -12,7 +12,8 @@
 | **`SPEC-0001`** | [`docs/specs/SPEC-0001-data-pipeline/`](../specs/SPEC-0001-data-pipeline/spec.md) | `DONB-1`, `DONB-5` (`TASK-0101..0104`) | **Verificado** (`11/11` Test Anchors verdes) |
 | **`SPEC-0002`** | [`docs/specs/SPEC-0002-audit-and-laya/`](../specs/SPEC-0002-audit-and-laya/spec.md) | `DONB-2`, `DONB-6` (`TASK-0201..0204`) | **Verificado** (`14/14` Test Anchors verdes) |
 | **`SPEC-0003`** | [`docs/specs/SPEC-0003-editorial-governance/`](../specs/SPEC-0003-editorial-governance/spec.md) | `DONB-2`, `DONB-7` (`TASK-0301..0304`) | **Verificado** (`12/12` Test Anchors verdes) |
-| **`SPEC-0004`** | [`docs/specs/SPEC-0004-web-and-api/`](../specs/SPEC-0004-web-and-api/spec.md) | `DONB-3`, `DONB-4`, `DONB-9`, `DONB-10`, `DONB-11` (`TASK-0401..0403`) | **Verificado** (`8/8` Test Anchors verdes) |
+| **`SPEC-0004`** | [`docs/specs/SPEC-0004-web-and-api/`](../specs/SPEC-0004-web-and-api/spec.md) | `DONB-3`, `DONB-4`, `DONB-9`, `DONB-10`, `DONB-11` (`TASK-0401..0404`) | **Verificado** (`10/10` Test Anchors verdes) |
+| **`SPEC-0005`** | [`docs/specs/SPEC-0005-live-http-collectors/`](../specs/SPEC-0005-live-http-collectors/spec.md) | `DONB-1`, `DONB-12` (`TASK-0501..0503`) | **Verificado** (`5/5` Test Anchors verdes) |
 
 ---
 
@@ -20,13 +21,13 @@
 
 | Spec | Req ID | Tipo | Critério (`AC-*`) | Task / Jira | Implementação (`src/` ou raiz) | Teste Automatizado (`tests/`) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `SPEC-0001` | `FR-001` | Funcional | `AC-001` | `TASK-0101` (`DONB-1`) | `src/deolhonobrasil/pipeline/connectors.py` | `test_camara_ceap_connector_validates_and_quarantines`, `test_cgu_amendments_and_pncp_contracts_connectors` | **Verificado** |
+| `SPEC-0001` | `FR-001` | Funcional | `AC-001` | `TASK-0101` (`DONB-1`) | `src/deolhonobrasil/pipeline/connectors/` | `test_camara_ceap_connector_validates_and_quarantines`, `test_cgu_amendments_and_pncp_contracts_connectors` | **Verificado** |
 | `SPEC-0001` | `FR-002` | Funcional | `AC-001`, `AC-003` | `TASK-0101` (`DONB-1`) | `src/deolhonobrasil/pipeline/models.py`, `privacy.py` | `test_valid_cnpj_and_invalid_cnpj`, `test_senado_ceaps_connector_validates_and_quarantines_missing_amount` | **Verificado** |
 | `SPEC-0001` | `FR-003` | Funcional | `AC-004` | `TASK-0103` (`DONB-5`) | `src/deolhonobrasil/pipeline/storage.py` | `test_lakehouse_idempotency_and_reconciliation` | **Verificado** |
 | `SPEC-0001` | `FR-004` | Funcional | `AC-005` | `TASK-0104` (`DONB-5`) | `src/deolhonobrasil/pipeline/cli.py` | `test_end_to_end_cli_sample_pipeline` | **Verificado** |
 | `SPEC-0001` | `DATA-001` | Dados | `AC-003` | `TASK-0102` (`DONB-1`) | `src/deolhonobrasil/pipeline/privacy.py` (`parse_strict_monetary_value`) | `test_missing_monetary_value_never_becomes_zero` | **Verificado** |
 | `SPEC-0001` | `DATA-002` | Dados | `AC-004` | `TASK-0103` (`DONB-5`) | `src/deolhonobrasil/pipeline/storage.py` | `test_lakehouse_idempotency_and_reconciliation` | **Verificado** |
-| `SPEC-0001` | `DATA-003` | Dados | `AC-004` | `TASK-0103` (`DONB-5`) | `src/deolhonobrasil/pipeline/models.py` (`ReconciliationReport`) | `test_lakehouse_idempotency_and_reconciliation` | **Verificado** |
+| `SPEC-0001` | `DATA-003` | Dados | `AC-004` | `TASK-0103` (`DONB-5`) | `src/deolhonobrasil/pipeline/storage.py` (`ReconciliationReport`) | `test_lakehouse_idempotency_and_reconciliation` | **Verificado** |
 | `SPEC-0001` | `SEC-001` | Segurança/LGPD | `AC-002` | `TASK-0102` (`DONB-1`) | `src/deolhonobrasil/pipeline/privacy.py` (`normalize_and_protect_document`) | `test_cpf_lgpd_masking_on_normalization`, `test_already_masked_cgu_cpf_is_preserved` | **Verificado** |
 | `SPEC-0001` | `SEC-002` | Segurança | `AC-002` | `TASK-0102` (`DONB-1`) | `src/deolhonobrasil/pipeline/privacy.py`, `models.py` | `test_prompt_injection_and_control_chars_sanitization`, `test_editorial_policy_blocks_accusatory_language` | **Verificado** |
 | `SPEC-0001` | `NFR-001`, `NFR-002` | Não Funcional | `AC-004`, `AC-005` | `TASK-0103` (`DONB-5`) | `src/deolhonobrasil/pipeline/storage.py` | `test_lakehouse_idempotency_and_reconciliation` | **Verificado** |
@@ -40,6 +41,9 @@
 | `SPEC-0003` | `FR-009` | Funcional | `AC-012` | `TASK-0302` (`DONB-7`) | `src/deolhonobrasil/governance/dossiers.py` | `test_rectify_material_error`, `test_material_error_rectification_persistence` | **Verificado** |
 | `SPEC-0003` | `DATA-005`, `NFR-005` | Dados / NFR | `AC-013` | `TASK-0303` (`DONB-7`) | `src/deolhonobrasil/pipeline/storage.py`, `rls_policies.sql` | `test_editorial_audit_trail_immutability`, `test_cli_run_audit_pipeline` | **Verificado** |
 | `SPEC-0003` | `SEC-004`, `SEC-005` | Segurança / RLS | `AC-010` | `TASK-0301`, `TASK-0304` (`DONB-7`) | `src/deolhonobrasil/governance/dossiers.py`, `rls_policies.sql` | `test_visibility_governance_rls`, `test_published_dossier_requires_reviewer`, `test_rls_sql_file_exists_and_contains_policies`, `test_dossier_upsert_and_role_visibility_filtering`, `test_right_of_reply_prompt_injection_sanitization`, `test_right_of_reply_rejects_accusatory_text` | **Verificado** |
-| `SPEC-0004` | `FR-010`, `NFR-006`, `DATA-006` | Funcional / UI / Dados | `AC-014` | `TASK-0401` (`DONB-9`) | `wireframe_de_olho_no_brasil.html`, `.taste-skill/direction.json` | `test_wireframe_passes_achromatic_ledger_structural_invariants` + `lint.mjs` / `inspect.mjs` | **Verificado** |
+| `SPEC-0004` | `FR-010`, `NFR-006`, `DATA-006` | Funcional / UI / Dados | `AC-014` | `TASK-0401`, `TASK-0404` (`DONB-9`, `DONB-10`) | `wireframe_de_olho_no_brasil.html`, `src/deolhonobrasil/api/service.py`, `cli.py` | `test_wireframe_passes_achromatic_ledger_structural_invariants`, `test_root_serves_interactive_achromatic_ledger_ui`, `test_live_http_server_e2e_ui_and_api_roundtrip` | **Verificado** |
 | `SPEC-0004` | `FR-011`, `SEC-006`, `SEC-007` | Funcional / API / Segurança | `AC-015`, `AC-016`, `AC-017` | `TASK-0402` (`DONB-10`) | `src/deolhonobrasil/api/service.py` | `test_health_and_security_headers`, `test_get_dossiers_enforces_rls_for_public_vs_admin`, `test_get_expenses_and_reconciliation_decimal_totals`, `test_post_right_of_reply_creates_protocol_and_masks_cpf`, `test_post_right_of_reply_blocks_accusatory_and_sanitizes_injection`, `test_rate_limiter_blocks_excessive_requests_with_429` | **Verificado** |
 | `SPEC-0004` | `NFR-007` | DevSecOps / CI/CD | `AC-017` | `TASK-0403` (`DONB-11`) | `Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml` | `test_dockerfile_compose_and_github_ci_exist_and_run_harness` | **Verificado** |
+| `SPEC-0005` | `FR-012`, `DATA-007`, `SEC-008`, `NFR-008` | Coleta HTTP / SSRF / SHA-256 | `AC-018`, `AC-019`, `AC-020` | `TASK-0501`, `TASK-0502` (`DONB-12`) | `src/deolhonobrasil/pipeline/http_client.py` | `test_ssrf_guard_blocks_non_https_and_untrusted_hosts`, `test_payload_size_limit_prevents_memory_exhaustion`, `test_exponential_retry_recovers_from_transient_503` | **Verificado** |
+| `SPEC-0005` | `FR-013` | Orquestração Live / CLI | `AC-021` | `TASK-0503` (`DONB-12`) | `src/deolhonobrasil/pipeline/http_client.py`, `src/deolhonobrasil/pipeline/cli.py` | `test_live_ingestion_service_persists_and_reconciles_batches`, `test_cli_fetch_live_subcommand_executes_cleanly` | **Verificado** |
+

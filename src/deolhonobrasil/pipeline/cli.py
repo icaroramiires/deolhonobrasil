@@ -338,6 +338,27 @@ def main(argv: list[str] | None = None) -> int:
         help="Porta HTTP (default: 8000).",
     )
 
+    fetch_cmd = subparsers.add_parser(
+        "fetch-live",
+        help="Coleta lotes das APIs governamentais oficiais (.gov.br/.leg.br) com guarda Anti-SSRF e manifesto SHA-256.",
+    )
+    fetch_cmd.add_argument(
+        "--data-dir",
+        type=Path,
+        default=Path("./data"),
+        help="Diretório base do Data Lakehouse.",
+    )
+    fetch_cmd.add_argument(
+        "--use-offline-transport",
+        action="store_true",
+        help="Utiliza transporte determinístico local para verificação sem rede externa.",
+    )
+    fetch_cmd.add_argument(
+        "--verify-reconciliation",
+        action="store_true",
+        help="Falha com código de saída != 0 se houver divergência contábil.",
+    )
+
     args = parser.parse_args(argv)
     if args.command in ("run-sample", "run-audit"):
         run_audit = getattr(args, "run_audit", False) or (args.command == "run-audit")
@@ -346,6 +367,70 @@ def main(argv: list[str] | None = None) -> int:
             verify_reconciliation=args.verify_reconciliation,
             run_audit=run_audit,
         )
+    if args.command == "fetch-live":
+        from deolhonobrasil.pipeline.http_client import (
+            LiveGovernmentIngestionService,
+            ResilientGovernmentHTTPClient,
+        )
+
+        storage = CivicLakehouseStorage(data_dir=args.data_dir)
+        if args.use_offline_transport:
+            routes = {
+                "https://www.camara.leg.br/cotas/Ano-2026.csv.zip": (
+                    200,
+                    {"Content-Type": "text/csv"},
+                    SAMPLE_CAMARA_CSV.encode("utf-8"),
+                ),
+                "https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/2026/csv": (
+                    200,
+                    {"Content-Type": "text/csv"},
+                    SAMPLE_SENADO_CSV.encode("utf-8"),
+                ),
+                "https://api.portaldatransparencia.gov.br/api-de-dados/emendas?ano=2026": (
+                    200,
+                    {"Content-Type": "application/json"},
+                    SAMPLE_CGU_AMENDMENTS_JSON.encode("utf-8"),
+                ),
+                "https://pncp.gov.br/api/consulta/v1/contratos?dataInicial=20260901&dataFinal=20260930": (
+                    200,
+                    {"Content-Type": "application/json"},
+                    SAMPLE_PNCP_CONTRACTS_JSON.encode("utf-8"),
+                ),
+            }
+            client = ResilientGovernmentHTTPClient(
+                transport=lambda url, _timeout: routes[url]
+            )
+            totals = {
+                "CAMARA_CEAP": Decimal("16700.50"),
+                "SENADO_CEAPS": Decimal("3410.20"),
+                "CGU_EMENDAS": Decimal("250000.00"),
+                "PNCP_CONTRATOS": Decimal("1820000.00"),
+            }
+        else:
+            client = ResilientGovernmentHTTPClient()
+            totals = {}
+
+        service = LiveGovernmentIngestionService(storage=storage, http_client=client)
+        res = service.ingest_all_default_sources(control_totals=totals)
+        reports = res["reconciliation_reports"]
+        payload = {
+            "status": "SUCCESS",
+            "fetch_manifests": [m.to_dict() for m in res["manifests"]],
+            "reconciliation_reports": [
+                {
+                    "source": r.source.value,
+                    "raw_batch_sha256": r.raw_batch_sha256,
+                    "valid_records_count": r.valid_records_count,
+                    "is_reconciled": r.is_reconciled,
+                }
+                for r in reports
+            ],
+            "lakehouse_summary": storage.get_summary_metrics(),
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        if args.verify_reconciliation and not all(r.is_reconciled for r in reports):
+            return 1
+        return 0
     if args.command == "serve":
         from wsgiref.simple_server import make_server
         from deolhonobrasil.api.service import CivicAuditAPIService, CivicAuditHTTPApp

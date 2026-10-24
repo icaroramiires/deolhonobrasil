@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 52
+MIN_EXPECTED_UNIT_TESTS = 57
 _IN_HARNESS_TEST_DISCOVERY = False
 
 
@@ -70,7 +70,7 @@ class HarnessReport:
 
 def verify_openspec_traceability(repo_root: Path) -> GateResult:
     """Gate 1 (`intent-driven-development` + `spec-miner`):
-    Verifies that all 4 SDD packages under `docs/specs/SPEC-0001..0004/` exist with their
+    Verifies that all 5 SDD packages under `docs/specs/SPEC-0001..0005/` exist with their
     complete 6-artifact bundles (`spec.md`, `review.md`, `plan.md`, `data-model.md` or
     `api-contracts.md`, `tasks.md`, `test-plan.md`), declare typed requirement IDs
     (`FR-*`, `NFR-*`, `SEC-*`, `DATA-*`, `AI-*`, `AC-*`), pass Spec Review (`APPROVED`),
@@ -89,6 +89,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0002-audit-and-laya", "data-model.md"),
         ("SPEC-0003-editorial-governance", "data-model.md"),
         ("SPEC-0004-web-and-api", "api-contracts.md"),
+        ("SPEC-0005-live-http-collectors", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:
@@ -276,6 +277,7 @@ def verify_six_phase_loop(repo_root: Path) -> GateResult:
         "deolhonobrasil.governance.dossiers",
         "deolhonobrasil.governance.right_of_reply",
         "deolhonobrasil.api.service",
+        "deolhonobrasil.pipeline.http_client",
     )
     for mod_name in modules_to_inspect:
         mod = importlib.import_module(mod_name)
