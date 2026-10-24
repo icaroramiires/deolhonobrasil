@@ -31,6 +31,7 @@ from deolhonobrasil.pipeline.models import (
     CuratedParliamentaryAmendment,
     CuratedPublicContract,
     CuratedPublicExpense,
+    CuratedSanctionRecord,
     OfficialSource,
 )
 from deolhonobrasil.pipeline.privacy import compute_sha256_bytes
@@ -170,6 +171,25 @@ class CivicLakehouseStorage:
                     beneficiary_name TEXT NOT NULL,
                     committed_amount_cents INTEGER NOT NULL CHECK(committed_amount_cents >= 0),
                     paid_amount_cents INTEGER NOT NULL CHECK(paid_amount_cents >= 0),
+                    source TEXT NOT NULL,
+                    source_url TEXT NOT NULL,
+                    source_record_id TEXT NOT NULL,
+                    collected_at_utc TEXT NOT NULL,
+                    raw_batch_sha256 TEXT NOT NULL,
+                    FOREIGN KEY (raw_batch_sha256) REFERENCES raw_batch_manifests(raw_batch_sha256)
+                );
+
+                CREATE TABLE IF NOT EXISTS curated_sanctions (
+                    natural_key TEXT PRIMARY KEY CHECK(length(natural_key) = 64),
+                    sanction_code TEXT NOT NULL,
+                    sanctioned_doc_normalized TEXT NOT NULL,
+                    sanctioned_doc_type TEXT NOT NULL,
+                    sanctioned_name TEXT NOT NULL,
+                    sanction_type TEXT NOT NULL,
+                    sanctioning_organ TEXT NOT NULL,
+                    state_uf TEXT NOT NULL,
+                    start_date TEXT NOT NULL,
+                    end_date TEXT,
                     source TEXT NOT NULL,
                     source_url TEXT NOT NULL,
                     source_record_id TEXT NOT NULL,
@@ -645,6 +665,106 @@ class CivicLakehouseStorage:
             reported_control_total=batch.reported_control_total,
             discrepancy_amount=discrepancy,
             is_reconciled=is_reconciled,
+        )
+
+    def persist_sanction_batch(
+        self,
+        raw_bytes: bytes,
+        batch: IngestionBatchResult[CuratedSanctionRecord],
+    ) -> ReconciliationReport:
+        """Persiste lote de sanções administrativas (CEIS/CNEP) com idempotência e quarentena (`SPEC-0007`)."""
+        raw_path = self.archive_raw_payload(
+            source=batch.source,
+            source_url=batch.source_url,
+            raw_bytes=raw_bytes,
+            collected_at_utc=batch.collected_at_utc,
+            extension="json",
+        )
+        inserted_new = 0
+        deduplicated = 0
+
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO raw_batch_manifests (
+                    raw_batch_sha256, source, source_url, collected_at_utc,
+                    raw_file_path, byte_size, valid_count, quarantined_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    batch.raw_batch_sha256,
+                    batch.source.value,
+                    batch.source_url,
+                    batch.collected_at_utc,
+                    str(raw_path),
+                    len(raw_bytes),
+                    len(batch.valid_records),
+                    len(batch.quarantined_records),
+                ),
+            )
+            for q in batch.quarantined_records:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO quarantine_records (
+                        quarantine_id, source, source_record_id, raw_batch_sha256,
+                        rejection_reason, raw_payload_json, quarantined_at_utc
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        q.quarantine_id,
+                        q.source.value,
+                        q.source_record_id,
+                        q.raw_batch_sha256,
+                        q.rejection_reason,
+                        q.raw_payload_json,
+                        q.quarantined_at_utc,
+                    ),
+                )
+
+            for sanc in batch.valid_records:
+                cursor = conn.execute(
+                    """
+                    INSERT OR IGNORE INTO curated_sanctions (
+                        natural_key, sanction_code, sanctioned_doc_normalized,
+                        sanctioned_doc_type, sanctioned_name, sanction_type,
+                        sanctioning_organ, state_uf, start_date, end_date,
+                        source, source_url, source_record_id, collected_at_utc, raw_batch_sha256
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        sanc.natural_key,
+                        sanc.sanction_code,
+                        sanc.sanctioned_doc_normalized,
+                        sanc.sanctioned_doc_type,
+                        sanc.sanctioned_name,
+                        sanc.sanction_type,
+                        sanc.sanctioning_organ,
+                        sanc.state_uf,
+                        sanc.start_date.isoformat(),
+                        sanc.end_date.isoformat() if sanc.end_date else None,
+                        sanc.provenance.source.value,
+                        sanc.provenance.source_url,
+                        sanc.provenance.source_record_id,
+                        sanc.provenance.collected_at_utc,
+                        sanc.provenance.raw_batch_sha256,
+                    ),
+                )
+                if cursor.rowcount == 1:
+                    inserted_new += 1
+                else:
+                    deduplicated += 1
+
+        return ReconciliationReport(
+            source=batch.source,
+            raw_batch_sha256=batch.raw_batch_sha256,
+            valid_records_count=len(batch.valid_records),
+            inserted_new_count=inserted_new,
+            deduplicated_skipped_count=deduplicated,
+            quarantined_count=len(batch.quarantined_records),
+            computed_net_total=Decimal(len(batch.valid_records)).quantize(Decimal("0.01")),
+            reported_control_total=None,
+            discrepancy_amount=Decimal("0.00"),
+            is_reconciled=True,
         )
 
     def get_summary_metrics(self) -> dict[str, object]:

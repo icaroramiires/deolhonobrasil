@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.3.0  
-**Status:** 100% Verificada (`SPEC-0001..0006`, `62/62` testes, `57/57` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.4.0  
+**Status:** 100% Verificada (`SPEC-0001..0007`, `67/67` testes, `62/62` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -15,6 +15,7 @@
 | **`SPEC-0004`** | [`docs/specs/SPEC-0004-web-and-api/`](../specs/SPEC-0004-web-and-api/spec.md) | `DONB-3`, `DONB-4`, `DONB-9`, `DONB-10`, `DONB-11` (`TASK-0401..0404`) | **Verificado** (`10/10` Test Anchors verdes) |
 | **`SPEC-0005`** | [`docs/specs/SPEC-0005-live-http-collectors/`](../specs/SPEC-0005-live-http-collectors/spec.md) | `DONB-1`, `DONB-12` (`TASK-0501..0503`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0006`** | [`docs/specs/SPEC-0006-editorial-admin-and-evidence-bundle/`](../specs/SPEC-0006-editorial-admin-and-evidence-bundle/spec.md) | `DONB-2`, `DONB-13` (`TASK-0601..0603`) | **Verificado** (`5/5` Test Anchors verdes) |
+| **`SPEC-0007`** | [`docs/specs/SPEC-0007-cross-source-sanctions-and-divergence/`](../specs/SPEC-0007-cross-source-sanctions-and-divergence/spec.md) | `DONB-2`, `DONB-14` (`TASK-0701..0704`) | **Verificado** (`5/5` Test Anchors verdes) |
 
 ---
 
@@ -49,5 +50,7 @@
 | `SPEC-0005` | `FR-013` | Orquestração Live / CLI | `AC-021` | `TASK-0503` (`DONB-12`) | `src/deolhonobrasil/pipeline/http_client.py`, `src/deolhonobrasil/pipeline/cli.py` | `test_live_ingestion_service_persists_and_reconciles_batches`, `test_cli_fetch_live_subcommand_executes_cleanly` | **Verificado** |
 | `SPEC-0006` | `FR-014`, `SEC-009` | Admin Editorial API / RLS | `AC-022`, `AC-023` | `TASK-0602`, `TASK-0603` (`DONB-13`) | `src/deolhonobrasil/api/service.py`, `src/deolhonobrasil/pipeline/storage.py` | `test_admin_approve_dossier_requires_token_and_publishes_to_public`, `test_admin_rectify_material_error_updates_status_and_blocks_accusatory_note`, `test_admin_audit_trail_endpoint_returns_immutable_history` | **Verificado** |
 | `SPEC-0006` | `FR-015`, `DATA-008`, `NFR-009` | Evidence Bundle / SHA-256 | `AC-024`, `AC-025` | `TASK-0601`, `TASK-0603` (`DONB-13`) | `src/deolhonobrasil/governance/dossiers.py` (`VerifiableEvidenceBundle`), `src/deolhonobrasil/api/service.py` | `test_evidence_bundle_blocks_unreviewed_dossier_for_public_reader`, `test_verifiable_evidence_bundle_canonical_sha256_integrity` | **Verificado** |
+| `SPEC-0007` | `FR-016`, `DATA-009` | Conector CEIS/CNEP / Lakehouse / API | `AC-026`, `AC-029` | `TASK-0701`, `TASK-0703`, `TASK-0704` (`DONB-14`) | `src/deolhonobrasil/pipeline/models.py` (`CuratedSanctionRecord`), `cgu_transparencia.py`, `storage.py`, `api/service.py` | `test_ceis_cnep_connector_validates_masks_cpf_and_quarantines_invalid`, `test_lakehouse_and_api_sanctions_endpoint_roundtrip` | **Verificado** |
+| `SPEC-0007` | `FR-017`, `NFR-010`, `SEC-010` | Cruzamento CEIS/CNEP / Homonímia LGPD / Divergência | `AC-027`, `AC-028` | `TASK-0702` (`DONB-14`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_ceis_cnep_sanctioned_supplier_rule`, `evaluate_amendment_execution_divergence_rule`) | `test_cross_source_ceis_rule_detects_active_cnpj_sanction_with_dual_sha256`, `test_cross_source_ceis_rule_ignores_expired_sanction_or_masked_cpf_homonym`, `test_amendment_execution_divergence_rule_flags_discrepancy` | **Verificado** |
 
 

@@ -347,6 +347,68 @@ class CuratedParliamentaryAmendment:
 
 
 @dataclass(frozen=True, slots=True)
+class CuratedSanctionRecord:
+    """Registro padronizado de sanção administrativa vigente (CEIS/CNEP - CGU / `SPEC-0007`)."""
+
+    natural_key: str
+    sanction_code: str
+    sanctioned_doc_normalized: str
+    sanctioned_doc_type: str
+    sanctioned_name: str
+    sanction_type: str
+    sanctioning_organ: str
+    state_uf: str
+    start_date: date
+    end_date: date | None
+    provenance: ProvenanceMetadata
+
+    @classmethod
+    def create_validated(
+        cls,
+        *,
+        sanction_code: str,
+        sanctioned_raw_doc: str,
+        sanctioned_name: str,
+        sanction_type: str,
+        sanctioning_organ: str,
+        state_uf: str,
+        start_date: date,
+        end_date: date | None,
+        provenance: ProvenanceMetadata,
+    ) -> CuratedSanctionRecord:
+        clean_code = sanitize_untrusted_text(sanction_code, 80)
+        if not clean_code:
+            raise ValueError("Código da sanção (sanction_code) é obrigatório.")
+
+        doc_norm, doc_type = normalize_and_protect_document(sanctioned_raw_doc)
+        clean_name = sanitize_untrusted_text(sanctioned_name, 250)
+        clean_type = sanitize_untrusted_text(sanction_type, 200)
+        clean_organ = sanitize_untrusted_text(sanctioning_organ, 200)
+        if not clean_name or not clean_type:
+            raise ValueError("Nome do sancionado e tipo de sanção são obrigatórios.")
+
+        if end_date is not None and end_date < start_date:
+            raise ValueError("Data final da sanção não pode ser anterior à data inicial.")
+
+        natural_key = compute_sha256_text(
+            f"{provenance.source.value}|{clean_code}|{doc_norm}|{start_date.isoformat()}"
+        )
+        return cls(
+            natural_key=natural_key,
+            sanction_code=clean_code,
+            sanctioned_doc_normalized=doc_norm,
+            sanctioned_doc_type=doc_type,
+            sanctioned_name=clean_name,
+            sanction_type=clean_type,
+            sanctioning_organ=clean_organ or "N/A",
+            state_uf=sanitize_untrusted_text(state_uf, 2).upper() or "BR",
+            start_date=start_date,
+            end_date=end_date,
+            provenance=provenance,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class QuarantinedRecord:
     """Registro isolado em quarentena por falha de validação de schema ou integridade (Seção 8)."""
 
@@ -359,3 +421,4 @@ class QuarantinedRecord:
     quarantined_at_utc: str = field(
         default_factory=lambda: datetime.now().isoformat()
     )
+

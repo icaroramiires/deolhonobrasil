@@ -16,8 +16,10 @@ from decimal import Decimal
 
 from deolhonobrasil.audit.statistics import calculate_hhi_concentration, calculate_z_score
 from deolhonobrasil.pipeline.models import (
+    CuratedParliamentaryAmendment,
     CuratedPublicContract,
     CuratedPublicExpense,
+    CuratedSanctionRecord,
     EpistemicClassification,
     assert_non_accusatory_language,
 )
@@ -244,3 +246,139 @@ def evaluate_ceap_quota_outlier_rule(
         provenance_hashes=provenance_hashes,
         requires_human_review=True,
     )
+
+
+def evaluate_ceis_cnep_sanctioned_supplier_rule(
+    record: CuratedPublicContract | CuratedPublicExpense,
+    sanctions: Sequence[CuratedSanctionRecord],
+) -> AuditSignal | None:
+    """Cruza contrato ou despesa contra sanções CEIS/CNEP vigentes (`SPEC-0007` / `FR-017` / `NFR-010`).
+
+    Código da Regra: R-CROSS-CEIS-SANCTIONED-SUPPLIER
+    """
+    # NFR-010: Jamais realizar cruzamento automático por CPF mascarado para evitar homonímia.
+    if record.supplier_doc_type != "CNPJ":
+        return None
+
+    act_date = (
+        record.signature_date
+        if isinstance(record, CuratedPublicContract)
+        else record.issue_date
+    )
+    audited_amount = (
+        record.current_amount
+        if isinstance(record, CuratedPublicContract)
+        else record.net_amount
+    )
+
+    matched_sanction: CuratedSanctionRecord | None = None
+    for s in sanctions:
+        if s.sanctioned_doc_type != "CNPJ":
+            continue
+        if s.sanctioned_doc_normalized != record.supplier_doc_normalized:
+            continue
+        if act_date < s.start_date:
+            continue
+        if s.end_date is not None and act_date > s.end_date:
+            continue
+        matched_sanction = s
+        break
+
+    if matched_sanction is None:
+        return None
+
+    clean_supplier = sanitize_untrusted_text(record.supplier_name, 120)
+    clean_organ = sanitize_untrusted_text(record.organ_name, 120)
+    clean_sanc_type = sanitize_untrusted_text(matched_sanction.sanction_type, 120)
+    clean_sanc_organ = sanitize_untrusted_text(matched_sanction.sanctioning_organ, 120)
+
+    title = (
+        f"Divergência cadastral entre registro de pagamento/contrato e apontamento CEIS/CNEP "
+        f"para {clean_supplier}"
+    )
+    fact_summary = (
+        f"Registro de vínculo financeiro no órgão {clean_organ} em {act_date.isoformat()} "
+        f"no valor de R$ {audited_amount:.2f} com CNPJ {record.supplier_doc_normalized}, "
+        f"concomitante ao registro CEIS/CNEP '{matched_sanction.sanction_code}' ({clean_sanc_type}, "
+        f"órgão sancionador: {clean_sanc_organ}, vigência desde {matched_sanction.start_date.isoformat()})."
+    )
+    stat_summary = (
+        "Cruzamento determinístico exato por CNPJ de 14 dígitos e interseção temporal no intervalo "
+        "de vigência da restrição administrativa."
+    )
+    scope_limit = (
+        "A coexistência de registro no CEIS/CNEP e execução contratual não comprova irregularidade automática. "
+        "Restrições administrativas podem ter escopo limitado exclusivamente à esfera ou órgão sancionador "
+        "(art. 156, III da Lei 14.133/2021), estar amparadas por decisão judicial liminar suspensiva ou "
+        "referir-se a contrato assinado anteriormente à sanção para serviços contínuos essenciais."
+    )
+
+    provenance_hashes = (
+        record.provenance.raw_batch_sha256,
+        matched_sanction.provenance.raw_batch_sha256,
+    )
+    sig_hash = compute_sha256_text(
+        f"{record.natural_key}|{matched_sanction.natural_key}"
+    )[:12]
+
+    return AuditSignal(
+        signal_id=f"SIG-CEIS-{sig_hash}",
+        rule_code="R-CROSS-CEIS-SANCTIONED-SUPPLIER",
+        title=title,
+        official_fact_summary=fact_summary,
+        statistical_inference_summary=stat_summary,
+        scope_limitation_summary=scope_limit,
+        epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+        metric_name="active_sanction_overlap",
+        metric_value=Decimal("1.00"),
+        threshold_value=Decimal("1.00"),
+        audited_amount=audited_amount,
+        provenance_hashes=provenance_hashes,
+        requires_human_review=True,
+    )
+
+
+def evaluate_amendment_execution_divergence_rule(
+    amendment: CuratedParliamentaryAmendment,
+) -> AuditSignal | None:
+    """Verifica divergência contábil onde o valor pago supera o valor empenhado na emenda (`SPEC-0007`).
+
+    Código da Regra: R-CROSS-AMENDMENT-EXECUTION-GAP
+    """
+    if amendment.paid_amount <= amendment.committed_amount:
+        return None
+
+    gap = (amendment.paid_amount - amendment.committed_amount).quantize(Decimal("0.01"))
+    clean_code = sanitize_untrusted_text(amendment.amendment_code, 50)
+    clean_author = sanitize_untrusted_text(amendment.author_name, 120)
+
+    title = f"Divergência contábil entre valor pago e empenhado na emenda {clean_code}"
+    fact_summary = (
+        f"A emenda parlamentar {clean_code} ({amendment.year}, autor: {clean_author}) registra "
+        f"valor empenhado de R$ {amendment.committed_amount:.2f} e valor pago de R$ {amendment.paid_amount:.2f}."
+    )
+    stat_summary = (
+        f"Diferença positiva de R$ {gap:.2f} entre o montante pago e o empenhado do exercício corrente."
+    )
+    scope_limit = (
+        "Divergências entre valores pagos e empenhados no mesmo recorte temporal frequentemente decorrem "
+        "da liquidação de Restos a Pagar (RAP) de exercícios anteriores ou de consolidação assíncrona "
+        "entre SIAFI e Portal da Transparência, exigindo verificação das notas de empenho vinculadas."
+    )
+
+    return AuditSignal(
+        signal_id=f"SIG-AMD-GAP-{clean_code}-{amendment.natural_key[:8]}",
+        rule_code="R-CROSS-AMENDMENT-EXECUTION-GAP",
+        title=title,
+        official_fact_summary=fact_summary,
+        statistical_inference_summary=stat_summary,
+        scope_limitation_summary=scope_limit,
+        epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+        metric_name="paid_minus_committed_brl",
+        metric_value=gap,
+        threshold_value=Decimal("0.00"),
+        audited_amount=amendment.paid_amount,
+        provenance_hashes=(amendment.provenance.raw_batch_sha256, amendment.natural_key),
+        requires_human_review=True,
+    )
+

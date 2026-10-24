@@ -478,6 +478,47 @@ class CivicAuditAPIService:
         bundle = VerifiableEvidenceBundle.from_dossier_row(row)
         return 200, bundle.to_dict()
 
+    def get_sanctions(
+        self,
+        *,
+        state_uf: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[int, dict[str, object]]:
+        safe_limit = max(1, min(int(limit), 200))
+        safe_offset = max(0, int(offset))
+        conditions: list[str] = []
+        params: list[object] = []
+
+        if state_uf:
+            conditions.append("state_uf = ?")
+            params.append(state_uf.strip().upper()[:2])
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        with self.storage._connect() as conn:
+            total_row = conn.execute(
+                f"SELECT COUNT(*) FROM curated_sanctions {where_clause}",
+                tuple(params),
+            ).fetchone()
+            total_count = int(total_row[0]) if total_row else 0
+
+            rows = conn.execute(
+                f"""
+                SELECT * FROM curated_sanctions
+                {where_clause}
+                ORDER BY start_date DESC, natural_key ASC
+                LIMIT ? OFFSET ?
+                """,
+                tuple([*params, safe_limit, safe_offset]),
+            ).fetchall()
+
+        return 200, {
+            "total": total_count,
+            "limit": safe_limit,
+            "offset": safe_offset,
+            "items": [dict(r) for r in rows],
+        }
+
 
 class CivicAuditHTTPApp:
     """Zero-dependency HTTP/WSGI dispatcher wrapping `CivicAuditAPIService`."""
@@ -601,6 +642,14 @@ class CivicAuditHTTPApp:
             code, payload = self.service.get_evidence_bundle(
                 dossier_id=q.get("dossier_id", ""),
                 provided_admin_token=req_headers.get("x-admin-token"),
+            )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/sanctions":
+            code, payload = self.service.get_sanctions(
+                state_uf=q.get("state_uf"),
+                limit=_safe_int(q.get("limit"), 50),
+                offset=_safe_int(q.get("offset"), 0),
             )
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
