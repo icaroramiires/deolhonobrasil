@@ -550,3 +550,164 @@ def evaluate_split_expense_rule(
     return signals
 
 
+def extract_cnpj_root(raw_doc: str) -> str | None:
+    """Extrai a raiz societária de 8 dígitos de um CNPJ válido de 14 dígitos (`SPEC-0009`).
+
+    Rejeita categoricamente CPFs mascarados (`***.XXX.XXX-**`) e strings que não contenham
+    exatamente 14 dígitos (`NFR-012`).
+    """
+    digits = "".join(ch for ch in str(raw_doc) if ch.isdigit())
+    if len(digits) != 14:
+        return None
+    return digits[:8]
+
+
+def evaluate_shared_cnpj_root_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    min_branches: int = 2,
+    min_aggregate_amount: Decimal = Decimal("100000.00"),
+) -> list[AuditSignal]:
+    """Identifica despesas distribuídas entre filiais do mesmo grupo societário (mesma raiz CNPJ) no mesmo órgão (`SPEC-0009`).
+
+    Código da Regra: R-SHARED-CNPJ-ROOT
+    """
+    groups: dict[tuple[str, str, str], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.net_amount <= Decimal("0"):
+            continue
+        root = extract_cnpj_root(exp.supplier_doc_normalized)
+        if root is not None:
+            groups[(exp.organ_code, exp.organ_name, root)].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (organ_code, organ_name, root_cnpj), items in groups.items():
+        distinct_branches = {e.supplier_doc_normalized for e in items}
+        if len(distinct_branches) < min_branches:
+            continue
+
+        total_amount = sum(e.net_amount for e in items)
+        if total_amount < min_aggregate_amount:
+            continue
+
+        clean_organ = sanitize_untrusted_text(organ_name, 100)
+        unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in items}))
+
+        title = f"Despesas distribuídas entre múltiplas filiais do grupo econômico com raiz {root_cnpj}"
+        fact_summary = (
+            f"Foram registradas despesas para {len(distinct_branches)} filiais com raiz {root_cnpj} "
+            f"no órgão {clean_organ}, totalizando R$ {total_amount:.2f}."
+        )
+        stat_summary = (
+            f"Concentração de {len(distinct_branches)} filiais distintas do mesmo grupo societário no órgão, "
+            f"somando R$ {total_amount:.2f} (limiar: R$ {min_aggregate_amount:.2f})."
+        )
+        scope_limit = (
+            "Empresas pertencentes ao mesmo grupo econômico (matriz e filiais) possuem autorização jurídica para "
+            "atuar com inscrições individualizadas. A contratação concomitante de filiais pode decorrer de "
+            "unidades operacionais em municípios distintos ou fornecimento de itens de lotes separados."
+        )
+
+        sig_id = f"SIG-ROOT-{compute_sha256_text(f'{organ_code}:{root_cnpj}:{len(items)}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-SHARED-CNPJ-ROOT",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                metric_name="distinct_branches_count",
+                metric_value=Decimal(str(len(distinct_branches))),
+                threshold_value=min_aggregate_amount,
+                audited_amount=total_amount,
+                provenance_hashes=unique_hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
+def evaluate_monopolistic_supplier_category_rule(
+    expenses: Sequence[CuratedPublicExpense],
+    dominance_share_threshold: Decimal = Decimal("0.80"),
+    min_total_amount: Decimal = Decimal("100000.00"),
+    min_transactions: int = 3,
+) -> list[AuditSignal]:
+    """Identifica concentração monopolística (>= 80%) de um grupo/fornecedor em categoria/órgão (`SPEC-0009`).
+
+    Código da Regra: R-PROCUREMENT-MONOPOLISTIC-SUPPLIER
+    """
+    cat_groups: dict[tuple[str, str, str], list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.net_amount > Decimal("0") and exp.expense_category:
+            cat_groups[(exp.organ_code, exp.organ_name, exp.expense_category)].append(exp)
+
+    signals: list[AuditSignal] = []
+
+    for (organ_code, organ_name, category), items in cat_groups.items():
+        if len(items) < min_transactions:
+            continue
+
+        total_cat_amount = sum(e.net_amount for e in items)
+        if total_cat_amount < min_total_amount:
+            continue
+
+        # Agrupa gastos por raiz de CNPJ (se existir) ou pelo doc_normalized
+        supplier_subgroups: dict[str, list[CuratedPublicExpense]] = defaultdict(list)
+        for e in items:
+            root = extract_cnpj_root(e.supplier_doc_normalized) or e.supplier_doc_normalized
+            supplier_subgroups[root].append(e)
+
+        for root_key, sup_items in supplier_subgroups.items():
+            sup_amount = sum(e.net_amount for e in sup_items)
+            share = sup_amount / total_cat_amount
+
+            if share >= dominance_share_threshold:
+                clean_organ = sanitize_untrusted_text(organ_name, 100)
+                clean_cat = sanitize_untrusted_text(category, 80)
+                dominant_name = sanitize_untrusted_text(sup_items[0].supplier_name, 80)
+                unique_hashes = tuple(sorted({e.provenance.raw_batch_sha256 for e in sup_items}))
+                share_pct = (share * Decimal("100")).quantize(Decimal("0.01"))
+                thresh_pct = (dominance_share_threshold * Decimal("100")).quantize(Decimal("0.01"))
+
+                title = f"Concentração elevada de gastos com único fornecedor na categoria {clean_cat}"
+                fact_summary = (
+                    f"O fornecedor {dominant_name} respondeu por R$ {sup_amount:.2f} do total de "
+                    f"R$ {total_cat_amount:.2f} na categoria {clean_cat} no órgão {clean_organ}."
+                )
+                stat_summary = (
+                    f"Participação de {share_pct}% dos dispêndios da categoria concentrada no mesmo grupo "
+                    f"(limiar: {thresh_pct}%)."
+                )
+                scope_limit = (
+                    "A concentração em um único fornecedor pode decorrer de especialização técnica exclusiva, "
+                    "direitos autorais protegidos ou fornecimento em localidade sem outros concorrentes viáveis, "
+                    "não caracterizando irregularidade automática."
+                )
+
+                sig_id = f"SIG-MONOP-{compute_sha256_text(f'{organ_code}:{category}:{root_key}')[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-PROCUREMENT-MONOPOLISTIC-SUPPLIER",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                        metric_name="supplier_category_share",
+                        metric_value=share.quantize(Decimal("0.01")),
+                        threshold_value=dominance_share_threshold,
+                        audited_amount=sup_amount,
+                        provenance_hashes=unique_hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    return signals
+
+
+

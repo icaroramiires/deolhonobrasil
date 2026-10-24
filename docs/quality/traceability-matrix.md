@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.5.0  
-**Status:** 100% Verificada (`SPEC-0001..0008`, `71/71` testes, `66/66` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.6.0  
+**Status:** 100% Verificada (`SPEC-0001..0009`, `75/75` testes, `70/70` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -17,6 +17,7 @@
 | **`SPEC-0006`** | [`docs/specs/SPEC-0006-editorial-admin-and-evidence-bundle/`](../specs/SPEC-0006-editorial-admin-and-evidence-bundle/spec.md) | `DONB-2`, `DONB-13` (`TASK-0601..0603`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0007`** | [`docs/specs/SPEC-0007-cross-source-sanctions-and-divergence/`](../specs/SPEC-0007-cross-source-sanctions-and-divergence/spec.md) | `DONB-2`, `DONB-14` (`TASK-0701..0704`) | **Verificado** (`5/5` Test Anchors verdes) |
 | **`SPEC-0008`** | [`docs/specs/SPEC-0008-benford-and-split-expense-rules/`](../specs/SPEC-0008-benford-and-split-expense-rules/spec.md) | `DONB-2`, `DONB-15` (`TASK-0801..0804`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0009`** | [`docs/specs/SPEC-0009-supplier-network-and-shared-patterns/`](../specs/SPEC-0009-supplier-network-and-shared-patterns/spec.md) | `DONB-2`, `DONB-16` (`TASK-0901..0904`) | **Verificado** (`4/4` Test Anchors verdes) |
 
 ---
 
@@ -55,5 +56,7 @@
 | `SPEC-0007` | `FR-017`, `NFR-010`, `SEC-010` | Cruzamento CEIS/CNEP / Homonímia LGPD / Divergência | `AC-027`, `AC-028` | `TASK-0702` (`DONB-14`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_ceis_cnep_sanctioned_supplier_rule`, `evaluate_amendment_execution_divergence_rule`) | `test_cross_source_ceis_rule_detects_active_cnpj_sanction_with_dual_sha256`, `test_cross_source_ceis_rule_ignores_expired_sanction_or_masked_cpf_homonym`, `test_amendment_execution_divergence_rule_flags_discrepancy` | **Verificado** |
 | `SPEC-0008` | `FR-018`, `DATA-010`, `SEC-011` | Regra de Desvio Benford (MAD e Qui-Quadrado) | `AC-030`, `AC-031` | `TASK-0801`, `TASK-0803` (`DONB-15`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_benford_distribution_rule`), `statistics.py` | `test_benford_rule_detects_non_conformant_distribution_and_emits_signal`, `test_benford_rule_returns_none_for_conformant_or_small_sample` | **Verificado** |
 | `SPEC-0008` | `FR-019`, `NFR-011`, `DATA-010`, `SEC-011` | Regra de Fracionamento de Despesa / Janela Móvel | `AC-032`, `AC-033` | `TASK-0802`, `TASK-0804` (`DONB-15`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_split_expense_rule`) | `test_split_expense_rule_detects_clustering_within_rolling_window`, `test_split_expense_rule_ignores_isolated_transactions_or_below_aggregate_threshold` | **Verificado** |
+| `SPEC-0009` | `FR-020`, `NFR-012`, `DATA-011`, `SEC-012` | Extração de Raiz CNPJ e Regra de Filiais do Mesmo Grupo | `AC-034`, `AC-035` | `TASK-0901`, `TASK-0902` (`DONB-16`) | `src/deolhonobrasil/audit/rules.py` (`extract_cnpj_root`, `evaluate_shared_cnpj_root_rule`) | `test_extract_cnpj_root_validates_14_digits_and_rejects_cpf`, `test_shared_cnpj_root_rule_detects_multiple_branches_for_same_organ`, `test_shared_cnpj_root_rule_ignores_single_branch_or_unrelated_cnpjs` | **Verificado** |
+| `SPEC-0009` | `FR-021`, `DATA-011`, `SEC-012` | Regra de Concentração Monopolística por Categoria | `AC-036`, `AC-037` | `TASK-0903`, `TASK-0904` (`DONB-16`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_monopolistic_supplier_category_rule`) | `test_monopolistic_supplier_category_rule_detects_dominance` | **Verificado** |
 
 

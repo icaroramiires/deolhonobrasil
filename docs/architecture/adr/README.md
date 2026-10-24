@@ -14,3 +14,4 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0006](0006-verifiable-evidence-bundles-and-editorial-admin-api.md) | Fluxo Administrativo de Revisão Humana via API e Pacote de Evidências Verificável (`SHA-256`) | Aceito | 2026-10-23 | `SPEC-0006` |
 | [ADR-0007](0007-cross-source-ceis-cnep-sanctions-and-divergence-rules.md) | Cruzamento Multicritério CEIS/CNEP, Divergência entre Fontes e Prevenção de Homonímia LGPD | Aceito | 2026-10-23 | `SPEC-0007` |
 | [ADR-0008](0008-benford-distribution-and-split-expense-audit-rules.md) | Detecção de Fracionamento de Despesas e Avaliação da Lei de Benford em Lotes | Aceito | 2026-10-24 | `SPEC-0008` |
+| [ADR-0009](0009-shared-cnpj-root-and-corporate-group-audit-rules.md) | Detecção de Vínculo Societário por Radical de CNPJ Compartilhado e Monopólio de Fornecedores | Aceito | 2026-10-24 | `SPEC-0009` |
