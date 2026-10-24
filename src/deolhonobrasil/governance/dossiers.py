@@ -10,8 +10,10 @@ Implementa os requisitos das Seções 12.1, 12.2 e 12.4:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from enum import StrEnum
+import json
+from typing import Any
 
 from deolhonobrasil.audit.laya_engine import System1Decision
 from deolhonobrasil.audit.rag_narrator import GroundedDossierSection
@@ -21,7 +23,10 @@ from deolhonobrasil.governance.right_of_reply import (
     RightOfReplySubmission,
 )
 from deolhonobrasil.pipeline.models import assert_non_accusatory_language
-from deolhonobrasil.pipeline.privacy import sanitize_untrusted_public_text
+from deolhonobrasil.pipeline.privacy import (
+    compute_sha256_text,
+    sanitize_untrusted_public_text,
+)
 
 
 class AccessRole(StrEnum):
@@ -75,6 +80,121 @@ class AuditDossier:
 
         if self.correction_note:
             assert_non_accusatory_language(self.correction_note)
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiableEvidenceBundle:
+    """Pacote autocontido e criptograficamente verificável (`SPEC-0006` / `DATA-008` / `NFR-009`)."""
+
+    dossier_id: str
+    rule_code: str
+    title: str
+    status: str
+    reviewer_id: str
+    epistemic_layer: str
+    official_data_block: str
+    statistical_inference_block: str
+    audit_hypothesis_and_limits_block: str
+    provenance_hashes: tuple[str, ...]
+    right_of_reply: dict[str, Any] | None
+    correction_note: str | None
+    updated_at_utc: str
+    bundle_sha256: str
+
+    @staticmethod
+    def compute_canonical_hash(payload_without_hash: dict[str, Any]) -> str:
+        canonical = json.dumps(
+            payload_without_hash,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        return compute_sha256_text(canonical)
+
+    @classmethod
+    def from_dossier_row(cls, row: dict[str, Any]) -> VerifiableEvidenceBundle:
+        prov_raw = row.get("provenance_hashes") or ()
+        if isinstance(prov_raw, str):
+            prov_tuple = tuple(json.loads(prov_raw))
+        else:
+            prov_tuple = tuple(str(h) for h in prov_raw)
+
+        base_dict: dict[str, Any] = {
+            "dossier_id": str(row["dossier_id"]),
+            "rule_code": str(row["rule_code"]),
+            "title": str(row["title"]),
+            "status": str(row["status"]),
+            "reviewer_id": str(row.get("reviewer_id") or ""),
+            "epistemic_layer": str(row["epistemic_layer"]),
+            "official_data_block": str(row["official_data_block"]),
+            "statistical_inference_block": str(row["statistical_inference_block"]),
+            "audit_hypothesis_and_limits_block": str(row["audit_hypothesis_and_limits_block"]),
+            "provenance_hashes": list(prov_tuple),
+            "right_of_reply": row.get("right_of_reply"),
+            "correction_note": row.get("correction_note"),
+            "updated_at_utc": str(row["updated_at_utc"]),
+        }
+        digest = cls.compute_canonical_hash(base_dict)
+        return cls(
+            dossier_id=base_dict["dossier_id"],
+            rule_code=base_dict["rule_code"],
+            title=base_dict["title"],
+            status=base_dict["status"],
+            reviewer_id=base_dict["reviewer_id"],
+            epistemic_layer=base_dict["epistemic_layer"],
+            official_data_block=base_dict["official_data_block"],
+            statistical_inference_block=base_dict["statistical_inference_block"],
+            audit_hypothesis_and_limits_block=base_dict["audit_hypothesis_and_limits_block"],
+            provenance_hashes=prov_tuple,
+            right_of_reply=base_dict["right_of_reply"],
+            correction_note=base_dict["correction_note"],
+            updated_at_utc=base_dict["updated_at_utc"],
+            bundle_sha256=digest,
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> VerifiableEvidenceBundle:
+        return cls(
+            dossier_id=str(data["dossier_id"]),
+            rule_code=str(data["rule_code"]),
+            title=str(data["title"]),
+            status=str(data["status"]),
+            reviewer_id=str(data["reviewer_id"]),
+            epistemic_layer=str(data["epistemic_layer"]),
+            official_data_block=str(data["official_data_block"]),
+            statistical_inference_block=str(data["statistical_inference_block"]),
+            audit_hypothesis_and_limits_block=str(data["audit_hypothesis_and_limits_block"]),
+            provenance_hashes=tuple(str(x) for x in data.get("provenance_hashes", [])),
+            right_of_reply=data.get("right_of_reply"),
+            correction_note=data.get("correction_note"),
+            updated_at_utc=str(data["updated_at_utc"]),
+            bundle_sha256=str(data["bundle_sha256"]),
+        )
+
+    def verify_integrity(self) -> bool:
+        expected = self.compute_canonical_hash(
+            {
+                "dossier_id": self.dossier_id,
+                "rule_code": self.rule_code,
+                "title": self.title,
+                "status": self.status,
+                "reviewer_id": self.reviewer_id,
+                "epistemic_layer": self.epistemic_layer,
+                "official_data_block": self.official_data_block,
+                "statistical_inference_block": self.statistical_inference_block,
+                "audit_hypothesis_and_limits_block": self.audit_hypothesis_and_limits_block,
+                "provenance_hashes": list(self.provenance_hashes),
+                "right_of_reply": self.right_of_reply,
+                "correction_note": self.correction_note,
+                "updated_at_utc": self.updated_at_utc,
+            }
+        )
+        return expected == self.bundle_sha256
+
+    def to_dict(self) -> dict[str, object]:
+        d = asdict(self)
+        d["provenance_hashes"] = list(self.provenance_hashes)
+        return d
 
 
 def is_visible_to_role(dossier: AuditDossier, role: AccessRole) -> bool:

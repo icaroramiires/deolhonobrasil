@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 57
+MIN_EXPECTED_UNIT_TESTS = 62
 _IN_HARNESS_TEST_DISCOVERY = False
 
 
@@ -70,7 +70,7 @@ class HarnessReport:
 
 def verify_openspec_traceability(repo_root: Path) -> GateResult:
     """Gate 1 (`intent-driven-development` + `spec-miner`):
-    Verifies that all 5 SDD packages under `docs/specs/SPEC-0001..0005/` exist with their
+    Verifies that all 6 SDD packages under `docs/specs/SPEC-0001..0006/` exist with their
     complete 6-artifact bundles (`spec.md`, `review.md`, `plan.md`, `data-model.md` or
     `api-contracts.md`, `tasks.md`, `test-plan.md`), declare typed requirement IDs
     (`FR-*`, `NFR-*`, `SEC-*`, `DATA-*`, `AI-*`, `AC-*`), pass Spec Review (`APPROVED`),
@@ -90,6 +90,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0003-editorial-governance", "data-model.md"),
         ("SPEC-0004-web-and-api", "api-contracts.md"),
         ("SPEC-0005-live-http-collectors", "data-model.md"),
+        ("SPEC-0006-editorial-admin-and-evidence-bundle", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:
@@ -193,7 +194,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
     from deolhonobrasil.audit.laya_engine import System1Decision
     from deolhonobrasil.audit.rag_narrator import GroundedDossierSection
     from deolhonobrasil.audit.rules import AuditSignal
-    from deolhonobrasil.governance.dossiers import AuditDossier
+    from deolhonobrasil.governance.dossiers import AuditDossier, VerifiableEvidenceBundle
     from deolhonobrasil.governance.right_of_reply import RightOfReplySubmission
     from deolhonobrasil.pipeline.models import (
         CuratedParliamentaryAmendment,
@@ -211,6 +212,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         System1Decision,
         GroundedDossierSection,
         AuditDossier,
+        VerifiableEvidenceBundle,
         RightOfReplySubmission,
     )
     for model_cls in domain_models:

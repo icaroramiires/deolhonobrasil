@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.2.0  
-**Status:** 100% Verificada (`SPEC-0001..0005`, `57/57` testes, `52/52` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 1.3.0  
+**Status:** 100% Verificada (`SPEC-0001..0006`, `62/62` testes, `57/57` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -14,6 +14,7 @@
 | **`SPEC-0003`** | [`docs/specs/SPEC-0003-editorial-governance/`](../specs/SPEC-0003-editorial-governance/spec.md) | `DONB-2`, `DONB-7` (`TASK-0301..0304`) | **Verificado** (`12/12` Test Anchors verdes) |
 | **`SPEC-0004`** | [`docs/specs/SPEC-0004-web-and-api/`](../specs/SPEC-0004-web-and-api/spec.md) | `DONB-3`, `DONB-4`, `DONB-9`, `DONB-10`, `DONB-11` (`TASK-0401..0404`) | **Verificado** (`10/10` Test Anchors verdes) |
 | **`SPEC-0005`** | [`docs/specs/SPEC-0005-live-http-collectors/`](../specs/SPEC-0005-live-http-collectors/spec.md) | `DONB-1`, `DONB-12` (`TASK-0501..0503`) | **Verificado** (`5/5` Test Anchors verdes) |
+| **`SPEC-0006`** | [`docs/specs/SPEC-0006-editorial-admin-and-evidence-bundle/`](../specs/SPEC-0006-editorial-admin-and-evidence-bundle/spec.md) | `DONB-2`, `DONB-13` (`TASK-0601..0603`) | **Verificado** (`5/5` Test Anchors verdes) |
 
 ---
 
@@ -46,4 +47,7 @@
 | `SPEC-0004` | `NFR-007` | DevSecOps / CI/CD | `AC-017` | `TASK-0403` (`DONB-11`) | `Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml` | `test_dockerfile_compose_and_github_ci_exist_and_run_harness` | **Verificado** |
 | `SPEC-0005` | `FR-012`, `DATA-007`, `SEC-008`, `NFR-008` | Coleta HTTP / SSRF / SHA-256 | `AC-018`, `AC-019`, `AC-020` | `TASK-0501`, `TASK-0502` (`DONB-12`) | `src/deolhonobrasil/pipeline/http_client.py` | `test_ssrf_guard_blocks_non_https_and_untrusted_hosts`, `test_payload_size_limit_prevents_memory_exhaustion`, `test_exponential_retry_recovers_from_transient_503` | **Verificado** |
 | `SPEC-0005` | `FR-013` | Orquestração Live / CLI | `AC-021` | `TASK-0503` (`DONB-12`) | `src/deolhonobrasil/pipeline/http_client.py`, `src/deolhonobrasil/pipeline/cli.py` | `test_live_ingestion_service_persists_and_reconciles_batches`, `test_cli_fetch_live_subcommand_executes_cleanly` | **Verificado** |
+| `SPEC-0006` | `FR-014`, `SEC-009` | Admin Editorial API / RLS | `AC-022`, `AC-023` | `TASK-0602`, `TASK-0603` (`DONB-13`) | `src/deolhonobrasil/api/service.py`, `src/deolhonobrasil/pipeline/storage.py` | `test_admin_approve_dossier_requires_token_and_publishes_to_public`, `test_admin_rectify_material_error_updates_status_and_blocks_accusatory_note`, `test_admin_audit_trail_endpoint_returns_immutable_history` | **Verificado** |
+| `SPEC-0006` | `FR-015`, `DATA-008`, `NFR-009` | Evidence Bundle / SHA-256 | `AC-024`, `AC-025` | `TASK-0601`, `TASK-0603` (`DONB-13`) | `src/deolhonobrasil/governance/dossiers.py` (`VerifiableEvidenceBundle`), `src/deolhonobrasil/api/service.py` | `test_evidence_bundle_blocks_unreviewed_dossier_for_public_reader`, `test_verifiable_evidence_bundle_canonical_sha256_integrity` | **Verificado** |
+
 

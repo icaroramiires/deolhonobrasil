@@ -20,12 +20,20 @@ from typing import Any
 from urllib.parse import parse_qs
 import uuid
 
-from deolhonobrasil.governance.dossiers import AccessRole
+from deolhonobrasil.governance.dossiers import (
+    AccessRole,
+    DossierStatus,
+    VerifiableEvidenceBundle,
+)
 from deolhonobrasil.governance.right_of_reply import (
     RightOfReplyStatus,
     RightOfReplySubmission,
 )
-from deolhonobrasil.pipeline.privacy import normalize_and_protect_document
+from deolhonobrasil.pipeline.models import assert_non_accusatory_language
+from deolhonobrasil.pipeline.privacy import (
+    normalize_and_protect_document,
+    sanitize_untrusted_public_text,
+)
 from deolhonobrasil.pipeline.storage import CivicLakehouseStorage
 
 
@@ -276,6 +284,200 @@ class CivicAuditAPIService:
             "submitted_at_utc": submission.submitted_at_utc,
         }
 
+    def _verify_admin_token(self, provided_admin_token: str | None) -> bool:
+        return bool(
+            self.admin_token
+            and provided_admin_token
+            and hmac.compare_digest(self.admin_token, provided_admin_token)
+        )
+
+    def approve_dossier(
+        self,
+        payload: dict[str, Any],
+        *,
+        provided_admin_token: str | None = None,
+    ) -> tuple[int, dict[str, object]]:
+        if not self._verify_admin_token(provided_admin_token):
+            return 403, {
+                "error": "FORBIDDEN",
+                "detail": "Aprovação editorial exige cabeçalho X-Admin-Token válido.",
+            }
+        dossier_id = str(payload.get("dossier_id") or "").strip()
+        reviewer_id = sanitize_untrusted_public_text(str(payload.get("reviewer_id") or ""), 80)
+        if not dossier_id or not reviewer_id:
+            return 422, {
+                "error": "VALIDATION_ERROR",
+                "detail": "Campos 'dossier_id' e 'reviewer_id' são obrigatórios.",
+            }
+
+        existing = self.storage.get_dossier(dossier_id)
+        if not existing:
+            return 404, {"error": "DOSSIER_NOT_FOUND", "detail": f"Dossiê '{dossier_id}' não encontrado."}
+
+        now_utc = datetime.now(timezone.utc).isoformat()
+        previous_status = str(existing["status"])
+        new_status = DossierStatus.PUBLICADO_COM_REVISAO.value
+
+        with self.storage._connect() as conn:
+            conn.execute(
+                """
+                UPDATE audit_dossiers
+                SET status = ?, reviewer_id = ?, updated_at_utc = ?
+                WHERE dossier_id = ?
+                """,
+                (new_status, reviewer_id, now_utc, dossier_id),
+            )
+            conn.execute(
+                """
+                INSERT INTO editorial_audit_trail (
+                    event_id, dossier_id, action, previous_status, new_status,
+                    actor_id, actor_role, rationale, metadata_json, occurred_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    dossier_id,
+                    "APPROVE_FOR_PUBLICATION",
+                    previous_status,
+                    new_status,
+                    reviewer_id,
+                    AccessRole.REVIEWER_ADMIN.value,
+                    "Aprovação humana para publicação pública após conferência documental.",
+                    json.dumps({"approved_via": "api_v1_admin"}, ensure_ascii=False),
+                    now_utc,
+                ),
+            )
+
+        return 200, {
+            "dossier_id": dossier_id,
+            "previous_status": previous_status,
+            "status": new_status,
+            "reviewer_id": reviewer_id,
+            "updated_at_utc": now_utc,
+        }
+
+    def rectify_dossier(
+        self,
+        payload: dict[str, Any],
+        *,
+        provided_admin_token: str | None = None,
+    ) -> tuple[int, dict[str, object]]:
+        if not self._verify_admin_token(provided_admin_token):
+            return 403, {
+                "error": "FORBIDDEN",
+                "detail": "Retificação editorial exige cabeçalho X-Admin-Token válido.",
+            }
+        dossier_id = str(payload.get("dossier_id") or "").strip()
+        reviewer_id = sanitize_untrusted_public_text(str(payload.get("reviewer_id") or ""), 80)
+        raw_note = str(payload.get("correction_note") or "").strip()
+        if not dossier_id or not reviewer_id or not raw_note:
+            return 422, {
+                "error": "VALIDATION_ERROR",
+                "detail": "Campos 'dossier_id', 'reviewer_id' e 'correction_note' são obrigatórios.",
+            }
+
+        try:
+            clean_note = sanitize_untrusted_public_text(raw_note, 2000)
+            assert_non_accusatory_language(clean_note)
+        except ValueError as exc:
+            return 422, {"error": "GOVERNANCE_VALIDATION_ERROR", "detail": str(exc)}
+
+        existing = self.storage.get_dossier(dossier_id)
+        if not existing:
+            return 404, {"error": "DOSSIER_NOT_FOUND", "detail": f"Dossiê '{dossier_id}' não encontrado."}
+
+        now_utc = datetime.now(timezone.utc).isoformat()
+        previous_status = str(existing["status"])
+        new_status = DossierStatus.ERRO_MATERIAL_RETIFICADO.value
+
+        with self.storage._connect() as conn:
+            conn.execute(
+                """
+                UPDATE audit_dossiers
+                SET status = ?, reviewer_id = ?, correction_note = ?, updated_at_utc = ?
+                WHERE dossier_id = ?
+                """,
+                (new_status, reviewer_id, clean_note, now_utc, dossier_id),
+            )
+            conn.execute(
+                """
+                INSERT INTO editorial_audit_trail (
+                    event_id, dossier_id, action, previous_status, new_status,
+                    actor_id, actor_role, rationale, metadata_json, occurred_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    dossier_id,
+                    "RECTIFY_MATERIAL_ERROR",
+                    previous_status,
+                    new_status,
+                    reviewer_id,
+                    AccessRole.REVIEWER_ADMIN.value,
+                    clean_note,
+                    json.dumps({"rectified_via": "api_v1_admin"}, ensure_ascii=False),
+                    now_utc,
+                ),
+            )
+
+        return 200, {
+            "dossier_id": dossier_id,
+            "previous_status": previous_status,
+            "status": new_status,
+            "reviewer_id": reviewer_id,
+            "correction_note": clean_note,
+            "updated_at_utc": now_utc,
+        }
+
+    def get_audit_trail(
+        self,
+        *,
+        dossier_id: str | None = None,
+        provided_admin_token: str | None = None,
+    ) -> tuple[int, dict[str, object]]:
+        if not self._verify_admin_token(provided_admin_token):
+            return 403, {
+                "error": "FORBIDDEN",
+                "detail": "Consulta à trilha editorial exige cabeçalho X-Admin-Token válido.",
+            }
+        events = self.storage.get_editorial_audit_trail(dossier_id=dossier_id)
+        return 200, {
+            "count": len(events),
+            "dossier_id": dossier_id,
+            "events": events,
+        }
+
+    def get_evidence_bundle(
+        self,
+        *,
+        dossier_id: str,
+        provided_admin_token: str | None = None,
+    ) -> tuple[int, dict[str, object]]:
+        clean_id = (dossier_id or "").strip()
+        if not clean_id:
+            return 422, {"error": "VALIDATION_ERROR", "detail": "Parâmetro 'dossier_id' é obrigatório."}
+
+        row = self.storage.get_dossier(clean_id)
+        if not row:
+            return 404, {"error": "DOSSIER_NOT_FOUND", "detail": f"Dossiê '{clean_id}' não encontrado."}
+
+        is_admin = self._verify_admin_token(provided_admin_token)
+        status_val = str(row.get("status") or "")
+        reviewer_val = str(row.get("reviewer_id") or "").strip()
+        published_statuses = {
+            DossierStatus.PUBLICADO_COM_REVISAO.value,
+            DossierStatus.ESCLARECIDO_COM_PROVA.value,
+            DossierStatus.ERRO_MATERIAL_RETIFICADO.value,
+        }
+        if not is_admin and (status_val not in published_statuses or not reviewer_val):
+            return 404, {
+                "error": "DOSSIER_NOT_PUBLIC",
+                "detail": "Dossiê em triagem interna não está disponível para exportação pública (RLS).",
+            }
+
+        bundle = VerifiableEvidenceBundle.from_dossier_row(row)
+        return 200, bundle.to_dict()
+
 
 class CivicAuditHTTPApp:
     """Zero-dependency HTTP/WSGI dispatcher wrapping `CivicAuditAPIService`."""
@@ -372,6 +574,34 @@ class CivicAuditHTTPApp:
 
         if upper_method == "POST" and clean_path == "/api/v1/right-of-reply":
             code, payload = self.service.submit_right_of_reply(json_body or {})
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/admin/dossiers/approve":
+            code, payload = self.service.approve_dossier(
+                json_body or {},
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/admin/dossiers/rectify":
+            code, payload = self.service.rectify_dossier(
+                json_body or {},
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/admin/audit-trail":
+            code, payload = self.service.get_audit_trail(
+                dossier_id=q.get("dossier_id"),
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/dossiers/evidence-bundle":
+            code, payload = self.service.get_evidence_bundle(
+                dossier_id=q.get("dossier_id", ""),
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
         return APIResponse(
