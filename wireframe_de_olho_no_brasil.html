@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>De Olho no Brasil · Rastreabilidade Cívica e Auditoria Assistida</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* tasteskill · achromatic-ledger (seed 2125632542) · shell: no-sidebar */
+    :root {
+      --ground: #f2f4f7;
+      --surface: #ffffff;
+      --raised: #e8ecf2;
+      --border: #e3e7ed;
+      --rule: #edf0f5;
+      --control: #cfd5df;
+      --text: #0a0a0a;
+      --muted: #59606a;
+      --accent: #141414;
+      --pos: #1b6e23;
+      --pos-bg: #dcfae5;
+      --pos-fg: #04250e;
+      --neg: #a81b20;
+      --neg-bg: #ffedea;
+      --neg-fg: #831c1e;
+      --warn: #80360a;
+      --warn-bg: #fffbeb;
+      --warn-fg: #80360a;
+      --neu-bg: #eeeeee;
+      --neu-fg: #303030;
+      --chart-1: #141414;
+      --chart-2: #8a8a8a;
+      --chart-3: #1d5fbf;
+      --chart-4: #b0b7c3;
+      --radius-card: 8px;
+      --radius-control: 6px;
+      --row-h: 44px;
+      --ctrl-h: 36px;
+      --gap: 12px;
+      --pad: 24px;
+      --font: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      font-family: var(--font);
+    }
+    html, body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--text);
+      font: 400 14px/1.45 var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+    code, pre, kbd, samp {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      background: var(--raised);
+      color: var(--text);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* No-sidebar shell: 48px topbar over a centred 1152px column */
+    .shell-nosidebar {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--ground);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar {
+      height: 48px;
+      max-width: 1152px;
+      width: 100%;
+      margin-inline: auto;
+      padding-inline: var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    .topnav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: var(--radius-control);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .nav-item:hover {
+      color: var(--text);
+      background: var(--raised);
+    }
+    .nav-item[aria-current="page"] {
+      color: var(--text);
+      background: var(--surface);
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    .nav-count {
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas {
+      max-width: 1152px;
+      width: 100%;
+      margin-inline: auto;
+      padding: 20px var(--pad) 40px;
+      min-width: 0;
+    }
+
+    /* Page header indented so title, card titles, numbers and plot share a left edge */
+    .page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .page-head .sub {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    .head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Controls */
+    .btn, .input, .seg {
+      height: var(--ctrl-h);
+      border-radius: var(--radius-control);
+      font: 500 13px/1 var(--font);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      border: 1px solid var(--control);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--raised); }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--surface);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { opacity: 0.92; background: var(--accent); }
+    .btn-secondary-pill {
+      background: #e5e5e5;
+      color: var(--text);
+      border-color: transparent;
+    }
+    .input {
+      padding: 0 10px;
+      border: 1px solid var(--control);
+      background: var(--surface);
+      color: var(--text);
+      width: 200px;
+    }
+    .input::placeholder { color: var(--muted); }
+    .seg {
+      display: inline-flex;
+      padding: 2px;
+      background: var(--raised);
+      border: 1px solid var(--border);
+    }
+    .seg button {
+      border: 0;
+      background: none;
+      color: var(--muted);
+      padding: 0 10px;
+      border-radius: calc(var(--radius-control) - 2px);
+      font: inherit;
+      cursor: pointer;
+    }
+    .seg button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    /* Panels & Grids */
+    .stack { display: flex; flex-direction: column; gap: var(--gap); }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--gap);
+      align-items: start;
+    }
+    .grid-detail {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: var(--gap);
+      align-items: start;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      min-width: 0;
+    }
+    .card-flush { padding: 0; overflow: hidden; }
+    .card-flush .card-head { padding: 18px 20px 12px; margin-bottom: 0; }
+    .card-flush .card-foot {
+      padding: 10px 20px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .card-meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Static balances strip: 1 container split by 1px dividers */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .kpi {
+      padding: 14px 20px;
+      min-width: 0;
+      text-align: left;
+      background: none;
+      border: 0;
+      font: inherit;
+      color: inherit;
+    }
+    .kpi + .kpi { border-left: 1px solid var(--rule); }
+    .kpi-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .kpi-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-value.money {
+      font-weight: 700;
+    }
+    .kpi-value.zero {
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .kpi-sub {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .delta {
+      font-size: 13px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .delta.up { color: var(--pos); }
+    .delta.down { color: var(--neg); }
+    .delta.flat { color: var(--muted); }
+
+    /* KPIs as the chart's tabs (drawn pattern: kpi-tabs-chart) */
+    .chart-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      margin: 0 -20px 14px;
+    }
+    .chart-tab {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      padding: 12px 20px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: var(--text);
+      min-width: 0;
+    }
+    .chart-tab + .chart-tab {
+      border-left: 1px solid var(--rule);
+    }
+    .chart-tab:hover {
+      background: var(--ground);
+    }
+    .chart-tab[aria-selected="true"] {
+      border-bottom-color: var(--text);
+      background: var(--surface);
+    }
+    .chart-tab .kpi-label {
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .chart-tab[aria-selected="true"] .kpi-label {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .chart-tab .tab-val {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .data th, .data td {
+      height: var(--row-h);
+      padding: 0 10px;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .data.compact th, .data.compact td {
+      height: 38px;
+    }
+    .data th:first-child, .data td:first-child { padding-left: 20px; }
+    .data th:last-child, .data td:last-child { padding-right: 20px; }
+    .data thead th {
+      height: 36px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+    }
+    .data tbody tr:last-child td { border-bottom: 0; }
+    .data tbody tr:hover { background: var(--ground); }
+    .data tfoot td {
+      height: 40px;
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      font-weight: 700;
+      background: var(--ground);
+    }
+    .data th.n, .data td.n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .data td.money {
+      font-weight: 700;
+    }
+    .data td.primary {
+      font-weight: 500;
+      color: var(--text);
+    }
+    .data td.muted {
+      color: var(--muted);
+    }
+
+    /* Status pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .pill.pos { background: var(--pos-bg); color: var(--pos-fg); }
+    .pill.neg { background: var(--neg-bg); color: var(--neg-fg); }
+    .pill.warn { background: var(--warn-bg); color: var(--warn-fg); }
+    .pill.neu { background: var(--neu-bg); color: var(--neu-fg); }
+
+    /* Charts */
+    .chart { width: 100%; height: auto; display: block; overflow: visible; }
+    .chart text {
+      fill: var(--muted);
+      font-family: var(--font);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .chart .grid line { stroke: var(--rule); stroke-width: 1; }
+    .chart .domain { stroke: var(--border); stroke-width: 1; }
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 10px; height: 3px; border-radius: 1px; display: inline-block; }
+
+    /* Signature element: Cadeia de Custódia & Decomposição Epistêmica */
+    .custody-strip {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-control);
+      background: var(--ground);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .epistemic-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .epistemic-block {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-control);
+      background: var(--ground);
+    }
+    .epistemic-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .epistemic-body {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* Key-value ledger rows */
+    .kv-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .kv-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 36px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .kv-row:last-child { border-bottom: 0; }
+    .kv-label { color: var(--muted); }
+    .kv-val { font-weight: 500; text-align: right; }
+    .kv-val.money { font-weight: 700; }
+
+    /* Filter toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--rule);
+      flex-wrap: wrap;
+    }
+
+    .screen-view[hidden] { display: none !important; }
+    .mobile-menu-btn { display: none; }
+
+    @media (max-width: 860px) {
+      :root { --pad: 16px; }
+      .topnav {
+        display: none;
+        position: absolute;
+        top: 48px;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 8px var(--pad);
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .topnav.open { display: flex; }
+      .mobile-menu-btn { display: inline-flex; }
+      .topbar-right .input, .topbar-right #btn-verify-batch { display: none; }
+      .kpis, .chart-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .kpi:nth-child(3), .chart-tab:nth-child(3) { border-left: 0; }
+      .kpi:nth-child(n+3), .chart-tab:nth-child(n+3) { border-top: 1px solid var(--rule); }
+      .chart-tab { border-bottom: 0; }
+      .chart-tab[aria-selected="true"] {
+        background: var(--raised);
+      }
+      .grid-2, .grid-detail {
+        grid-template-columns: 1fr;
+      }
+      .page-head h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell-nosidebar">
+    <header class="topbar-wrap">
+      <div class="topbar">
+        <div class="brand-cluster">
+          <a href="#overview" class="brand" data-nav="overview">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="15" height="15" rx="3" stroke="#0a0a0a" stroke-width="1.5"/>
+              <path d="M4.5 9C6.2 6.4 11.8 6.4 13.5 9C11.8 11.6 6.2 11.6 4.5 9Z" stroke="#0a0a0a" stroke-width="1.4"/>
+              <circle cx="9" cy="9" r="1.8" fill="#1d5fbf"/>
+            </svg>
+            <span>De Olho no Brasil</span>
+          </a>
+        </div>
+
+        <nav class="topnav" id="main-nav" aria-label="Navegação principal">
+          <button type="button" class="nav-item" data-nav="overview" aria-current="page">
+            Visão geral
+          </button>
+          <button type="button" class="nav-item" data-nav="list">
+            Explorador <span class="nav-count">42.850</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="detail">
+            Dossiê SHA-256 <span class="nav-count">18</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="inbox">
+            Direito de resposta <span class="nav-count">4</span>
+          </button>
+        </nav>
+
+        <div class="topbar-right">
+          <input type="search" class="input" id="global-search" placeholder="Filtrar CNPJ, órgão ou hash" aria-label="Filtrar CNPJ, órgão ou hash">
+          <button type="button" class="btn btn-primary" id="btn-verify-batch">Verificar SHA-256</button>
+          <button type="button" class="btn mobile-menu-btn" id="btn-mobile-menu" aria-label="Abrir navegação">Menu</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="canvas">
+      <div class="page-head">
+        <div>
+          <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
+          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados até 23 out 2026 · 18 sinais em triagem técnica e R$ 0,00 de divergência.</p>
+        </div>
+        <div class="head-actions">
+          <div class="seg" role="tablist" aria-label="Exercício fiscal">
+            <button type="button" role="tab" aria-selected="true" data-period="2026">Jan–Out 2026</button>
+            <button type="button" role="tab" aria-selected="false" data-period="90d">Últimos 90 dias</button>
+          </div>
+          <button type="button" class="btn" id="btn-export-parquet">Exportar Parquet (CC-BY-4.0)</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 1: OVERVIEW (drawn pattern: kpi-tabs-chart) -->
+      <section class="screen-view stack" id="screen-overview" aria-label="Visão geral da execução federal">
+        <div class="kpis" role="region" aria-label="Saldos consolidados da base cívica">
+          <div class="kpi">
+            <div class="kpi-label">Volume federal conciliado</div>
+            <div class="kpi-row">
+              <span class="kpi-value money">R$ 154,20 mi</span>
+              <span class="delta up">+4,2%</span>
+            </div>
+            <div class="kpi-sub">Soma exata das 4 fontes oficiais</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Registros com prova SHA-256</div>
+            <div class="kpi-row">
+              <span class="kpi-value">42.850</span>
+              <span class="delta flat">100,0%</span>
+            </div>
+            <div class="kpi-sub">28 registros inválidos em quarentena</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Sinais em revisão técnica</div>
+            <div class="kpi-row">
+              <span class="kpi-value">18</span>
+              <span class="delta down">+3 na semana</span>
+            </div>
+            <div class="kpi-sub">Desvio estatístico acima de 3,0σ</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Divergência de conciliação</div>
+            <div class="kpi-row">
+              <span class="kpi-value zero">R$ 0,00</span>
+            </div>
+            <div class="kpi-sub">Próxima coleta automática às 03:00 BRT</div>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Execução mensal por fonte oficial (R$ milhões)</h2>
+              <div class="card-meta">Selecione uma fonte abaixo para alternar a série principal · Comparação direta com o exercício de 2025</div>
+            </div>
+            <div class="chart-legend">
+              <span><i class="swatch" style="background: var(--chart-3)"></i>Exercício 2026 (série selecionada)</span>
+              <span><i class="swatch" style="background: var(--chart-2)"></i>Exercício 2025 (referência)</span>
+            </div>
+          </div>
+
+          <div class="chart-tabs" role="tablist" aria-label="Séries por fonte de dados públicos">
+            <button type="button" class="chart-tab" role="tab" aria-selected="true" data-series="total">
+              <div class="kpi-label">Total Federal (4 fontes)</div>
+              <div class="kpi-row">
+                <span class="tab-val">R$ 154,20 mi</span>
+                <span class="delta up">+4,2%</span>
+              </div>
+            </button>
+            <button type="button" class="chart-tab" role="tab" aria-selected="false" data-series="cgu">
+              <div class="kpi-label">Portal da Transparência (CGU)</div>
+              <div class="kpi-row">
+                <span class="tab-val">R$ 94,80 mi</span>
+                <span class="delta up">+3,8%</span>
+              </div>
+            </button>
+            <button type="button" class="chart-tab" role="tab" aria-selected="false" data-series="pncp">
+              <div class="kpi-label">PNCP Contratos (Lei 14.133)</div>
+              <div class="kpi-row">
+                <span class="tab-val">R$ 41,20 mi</span>
+                <span class="delta up">+5,1%</span>
+              </div>
+            </button>
+            <button type="button" class="chart-tab" role="tab" aria-selected="false" data-series="cotas">
+              <div class="kpi-label">Cotas (Câmara CEAP + Senado)</div>
+              <div class="kpi-row">
+                <span class="tab-val">R$ 18,20 mi</span>
+                <span class="delta up">+2,9%</span>
+              </div>
+            </button>
+          </div>
+
+          <div id="overview-line-chart" aria-label="Gráfico de linha da execução mensal"></div>
+
+          <div class="table-wrap" style="margin: 10px -20px -18px;">
+            <table class="data compact" aria-label="Comparação por fonte oficial">
+              <thead>
+                <tr>
+                  <th>Fonte oficial primária</th>
+                  <th class="n">Documentos</th>
+                  <th class="n">Acumulado 2026</th>
+                  <th class="n">vs Exercício 2025</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="primary">Portal da Transparência (CGU · Emendas e Favorecidos)</td>
+                  <td class="n">19.420</td>
+                  <td class="n money">R$ 94,80 mi</td>
+                  <td class="n"><span class="delta up">+3,8%</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">Portal Nacional de Contratações Públicas (PNCP · Contratos)</td>
+                  <td class="n">8.910</td>
+                  <td class="n money">R$ 41,20 mi</td>
+                  <td class="n"><span class="delta up">+5,1%</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">Câmara dos Deputados (CEAP) e Senado Federal (CEAPS)</td>
+                  <td class="n">14.520</td>
+                  <td class="n money">R$ 18,20 mi</td>
+                  <td class="n"><span class="delta up">+2,9%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Decomposição epistêmica e custódia</h2>
+                <div class="card-meta">Separação entre fato bruto, estatística e hipótese</div>
+              </div>
+              <span class="pill pos">SHA-256 íntegro</span>
+            </div>
+
+            <div id="epistemic-bars-chart" aria-label="Distribuição dos registros por camada epistêmica"></div>
+
+            <div class="kv-list" style="margin-top: 6px;">
+              <div class="kv-row">
+                <span class="kv-label">1. Dado Oficial Bruto (Parquet R2)</span>
+                <span class="kv-val">42.850 docs · 100,0%</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">2. Inferência Estatística (Z-Score / HHI)</span>
+                <span class="kv-val">312 sinais · 0,73%</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">3. Dossiês em Curadoria (Laya ONNX)</span>
+                <span class="kv-val">18 dossiês · 0,04%</span>
+              </div>
+            </div>
+
+            <div class="custody-strip">
+              <span>Raiz do lote: <code>sha256:9f86d081884c7d65</code></span>
+              <button type="button" class="btn" data-nav="detail">Inspecionar prova</button>
+            </div>
+          </article>
+
+          <article class="card card-flush">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Sinais matemáticos prioritários</h2>
+                <div class="card-meta">Triagem Laya ONNX + regras determinísticas</div>
+              </div>
+              <button type="button" class="btn" data-nav="list">Ver todos</button>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data" aria-label="Sinais matemáticos prioritários">
+                <thead>
+                  <tr>
+                    <th>Dossiê</th>
+                    <th>Indicador técnico</th>
+                    <th class="n">Laya</th>
+                    <th class="n">Valor auditado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-nav-row="detail" style="cursor: pointer;">
+                    <td><code>DONB-2026-0142</code></td>
+                    <td><span class="pill warn">Sobrepreço +3,4σ</span></td>
+                    <td class="n">0,89</td>
+                    <td class="n money">R$ 1.120.000,00</td>
+                  </tr>
+                  <tr data-nav-row="detail" style="cursor: pointer;">
+                    <td><code>DONB-2026-0139</code></td>
+                    <td><span class="pill warn">Concentração HHI</span></td>
+                    <td class="n">0,84</td>
+                    <td class="n money">R$ 485.000,00</td>
+                  </tr>
+                  <tr data-nav-row="detail" style="cursor: pointer;">
+                    <td><code>DONB-2026-0131</code></td>
+                    <td><span class="pill neu">CNPJ recém-aberto</span></td>
+                    <td class="n">0,78</td>
+                    <td class="n money">R$ 142.500,00</td>
+                  </tr>
+                  <tr data-nav-row="inbox" style="cursor: pointer;">
+                    <td><code>DONB-2026-0124</code></td>
+                    <td><span class="pill pos">Resposta anexada</span></td>
+                    <td class="n">0,71</td>
+                    <td class="n money">R$ 95.000,00</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2">Soma conciliada (4 dossiês)</td>
+                    <td class="n">0,81</td>
+                    <td class="n money">R$ 1.842.500,00</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: LIST (Explorador de Despesas, Contratos e Cotas) -->
+      <section class="screen-view stack" id="screen-list" hidden aria-label="Explorador de despesas federais">
+        <article class="card card-flush">
+          <div class="toolbar">
+            <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
+              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (6)</button>
+              <button type="button" role="tab" aria-selected="false" data-source="PNCP">PNCP Contratos</button>
+              <button type="button" role="tab" aria-selected="false" data-source="CGU">CGU Transparência</button>
+              <button type="button" role="tab" aria-selected="false" data-source="CEAP">Câmara / Senado</button>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido ou CNPJ" aria-label="Buscar favorecido ou CNPJ">
+              <span class="pill neu">CPF mascarado (LGPD Art. 6º)</span>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data" id="explorer-table" aria-label="Tabela auditável de gastos públicos federais">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Fonte / Órgão</th>
+                  <th>Favorecido (CNPJ / CPF LGPD)</th>
+                  <th>Prova SHA-256</th>
+                  <th>Classificação epistêmica</th>
+                  <th class="n">Score Laya</th>
+                  <th class="n">Valor líquido (R$)</th>
+                </tr>
+              </thead>
+              <tbody id="explorer-tbody"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="5" id="explorer-foot-label">Soma conciliada dos registros exibidos (6 documentos)</td>
+                  <td class="n" id="explorer-foot-score">0,68 méd.</td>
+                  <td class="n money" id="explorer-foot-total">R$ 1.890.420,00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="card-foot">
+            <span>Cada linha preserva o link direto para o JSON/CSV original e o hash SHA-256 calculado no momento da coleta.</span>
+            <span>Licença dos dados derivados: CC-BY-4.0</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- SCREEN 3: DETAIL (Dossiê de Verificação SHA-256) -->
+      <section class="screen-view stack" id="screen-detail" hidden aria-label="Dossiê de verificação técnica">
+        <div class="kpis" role="region" aria-label="Métricas do dossiê DONB-2026-0142">
+          <div class="kpi">
+            <div class="kpi-label">Valor global do contrato</div>
+            <div class="kpi-row">
+              <span class="kpi-value money">R$ 1.120.000,00</span>
+            </div>
+            <div class="kpi-sub">Contrato PNCP nº 042/2026 · 12 meses</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Mediana de referência (CATSER)</div>
+            <div class="kpi-row">
+              <span class="kpi-value money">R$ 740.000,00</span>
+              <span class="delta down">+51,4% acima</span>
+            </div>
+            <div class="kpi-sub">Base: 48 contratos federais similares</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Desvio estatístico (Z-Score)</div>
+            <div class="kpi-row">
+              <span class="kpi-value">+3,40σ</span>
+              <span class="delta down">Laya 0,89</span>
+            </div>
+            <div class="kpi-sub">Limiar de revisão técnica: 3,00σ</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Status de direito de resposta</div>
+            <div class="kpi-row">
+              <span class="kpi-value">Aberto</span>
+            </div>
+            <div class="kpi-sub">Notificação técnica disponível ao órgão</div>
+          </div>
+        </div>
+
+        <div class="grid-detail">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Camadas epistêmicas · Dossiê <code>DONB-2026-0142</code></h2>
+                <div class="card-meta">Linguagem neutra verificada por validador léxico · Proibido uso de termos acusatórios</div>
+              </div>
+              <span class="pill warn">Triagem técnica</span>
+            </div>
+
+            <div class="epistemic-list">
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span>1. [DADO OFICIAL] · Registro primário no PNCP</span>
+                  <code>ID: 00394544000185-1-000142/2026</code>
+                </div>
+                <p class="epistemic-body">
+                  Contrato firmado em 14/08/2026 entre Coordenação Logística (UASG 250005) e Alfa Logística Hospitalar S.A. (CNPJ <code>12.345.678/0001-95</code>) no valor global de <strong>R$ 1.120.000,00</strong> para armazenagem climatizada de insumos.
+                </p>
+              </div>
+
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span>2. [INFERÊNCIA ESTATÍSTICA] · Comparação paramétrica</span>
+                  <span>Regra: <code>R-PNCP-OVERPRICE-Z3</code></span>
+                </div>
+                <p class="epistemic-body">
+                  O custo unitário contratado por posição-palete refrigerada (<strong>R$ 280,00/mês</strong> para 4.000 posições) situa-se <strong>3,40 desvios-padrão</strong> acima da mediana nacional do catálogo CATSER 24812 (<strong>R$ 185,00/mês</strong>).
+                </p>
+              </div>
+
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span>3. [LIMITAÇÃO E HIPÓTESE] · O que os dados não provam sozinhos</span>
+                  <span>Motor: <code>Laya-ONNX-v1</code></span>
+                </div>
+                <p class="epistemic-body">
+                  A divergência estatística não configura irregularidade por si só. Exigências de redundância elétrica hospitalar (-80°C) ou frete aéreo emergencial podem justificar o custo adicional mediante apresentação do Termo de Referência.
+                </p>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <div class="card-head" style="margin-bottom: 6px;">
+                <h3 class="card-title" style="font-size: 14px;">Comparativo de preço unitário mensal por lote (R$ mil)</h3>
+                <span class="card-meta">Azul: Contrato auditado · Cinza: Mediana CATSER</span>
+              </div>
+              <div id="detail-columns-chart" aria-label="Gráfico de colunas comparativo de preços"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Cadeia de custódia e reprodutibilidade</h2>
+                <div class="card-meta">Qualquer cidadão pode recalcular este resultado localmente</div>
+              </div>
+              <span class="pill pos">SHA-256 íntegro</span>
+            </div>
+
+            <div class="kv-list">
+              <div class="kv-row">
+                <span class="kv-label">Fonte governamental</span>
+                <span class="kv-val">API PNCP v1 · Contratos</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Timestamp de coleta (UTC)</span>
+                <span class="kv-val"><code>2026-10-23T06:12:44Z</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Hash SHA-256 do payload bruto</span>
+                <span class="kv-val"><code>e3b0c44298fc1c149afbf4c8</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Arquivo Parquet (Cloudflare R2)</span>
+                <span class="kv-val"><code>r2://donb-raw/2026/10/pncp_0142.parquet</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Decisão System 1 (Laya Choice/Score)</span>
+                <span class="kv-val"><code>REVISAO_HUMANA (0,89)</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Revisor responsável (RLS)</span>
+                <span class="kv-val"><code>reviewer_admin · Fundador</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Diferença orçamentária sob análise</span>
+                <span class="kv-val money">R$ 380.000,00</span>
+              </div>
+            </div>
+
+            <div class="custody-strip" style="margin-top: 16px;">
+              <div>
+                <div style="font-weight: 600; color: var(--text);">Direito de resposta e contraditório</div>
+                <div style="color: var(--muted); margin-top: 2px;">Órgãos públicos e fornecedores têm destaque equivalente.</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary-pill" data-nav="inbox">Protocolar resposta</button>
+                <button type="button" class="btn btn-primary" id="btn-copy-hash">Copiar SHA-256</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: INBOX (Fila de Curadoria e Direito de Resposta) -->
+      <section class="screen-view stack" id="screen-inbox" hidden aria-label="Fila de curadoria e direito de resposta">
+        <div class="grid-detail">
+          <article class="card card-flush">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Protocolos de esclarecimento e revisão</h2>
+                <div class="card-meta">Submissões auditadas antes da publicação · SLA de 48h úteis</div>
+              </div>
+              <span class="pill pos">4 protocolos ativos</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data" aria-label="Fila de protocolos de direito de resposta">
+                <thead>
+                  <tr>
+                    <th>Protocolo</th>
+                    <th>Remetente verificado</th>
+                    <th>Estágio</th>
+                    <th class="n">Valor vinculado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>PROTO-DR-2026-0089</code></td>
+                    <td class="primary">Instituto Brasiliense de Gestão</td>
+                    <td><span class="pill warn">Pronto p/ publicar</span></td>
+                    <td class="n money">R$ 95.000,00</td>
+                  </tr>
+                  <tr>
+                    <td><code>PROTO-DR-2026-0088</code></td>
+                    <td class="primary">Coordenação Logística · MS</td>
+                    <td><span class="pill neu">Anexo em validação</span></td>
+                    <td class="n money">R$ 1.120.000,00</td>
+                  </tr>
+                  <tr>
+                    <td><code>PROTO-DR-2026-0084</code></td>
+                    <td class="primary">Gabinete Parlamentar · CEAP</td>
+                    <td><span class="pill pos">Publicado lado a lado</span></td>
+                    <td class="n money">R$ 48.200,00</td>
+                  </tr>
+                  <tr>
+                    <td><code>PROTO-DR-2026-0079</code></td>
+                    <td class="primary">Prefeitura Conveniada · Emenda</td>
+                    <td><span class="pill pos">Erro material corrigido</span></td>
+                    <td class="n money">R$ 310.000,00</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3">Soma dos dossiês com contraditório ativo (4 protocolos)</td>
+                    <td class="n money">R$ 1.573.200,00</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Inspeção · <code>PROTO-DR-2026-0089</code></h2>
+                <div class="card-meta">Recebido em 22/10/2026 às 16:40 BRT · Assinatura ICP-Brasil válida</div>
+              </div>
+              <span class="pill warn">SLA: 18h restantes</span>
+            </div>
+
+            <div class="epistemic-list">
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span>Síntese da justificativa enviada pelo representante</span>
+                  <code>SHA-256: 4a7d1ed41447</code>
+                </div>
+                <p class="epistemic-body">
+                  O fornecedor apresentou 3 relatórios técnicos entregues ao Senado Federal totalizando 420 páginas de modelagem atuarial, demonstrando que o pagamento único de <strong>R$ 95.000,00</strong> refere-se a 4 meses acumulados de execução contratual.
+                </p>
+              </div>
+
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span>Verificação de segurança (Anti-Prompt Injection)</span>
+                  <span class="pill pos">Sanitizado</span>
+                </div>
+                <p class="epistemic-body">
+                  Texto inspecionado pelo filtro determinístico <code>sanitize_untrusted_public_text</code>. Nenhuma instrução oculta ou tentativa de manipulação do motor <code>Laya</code> detectada.
+                </p>
+              </div>
+            </div>
+
+            <div class="kv-list" style="margin-top: 10px;">
+              <div class="kv-row">
+                <span class="kv-label">Efeito sobre o indicador público</span>
+                <span class="kv-val">Reclassifica para <code>ESCLARECIDO_COM_PROVA</code></span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-label">Destaque visual na página do dossiê</span>
+                <span class="kv-val">100% equivalente ao alerta original</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary-pill" id="btn-request-doc">Solicitar nota complementar</button>
+              <button type="button" class="btn btn-primary" id="btn-approve-reply">Publicar resposta lado a lado</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // tasteskill / charts.js — inlined for zero-dependency offline inspection & artifact preview
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svgEl = (tag, attrs = {}, text) => {
+      const n = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, String(v));
+      if (text != null) n.textContent = text;
+      return n;
+    };
+    const niceMax = (v, ticks = 4) => {
+      if (v <= 0) return ticks;
+      const raw = v / ticks;
+      const mag = 10 ** Math.floor(Math.log10(raw));
+      const norm = raw / mag;
+      const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+      return step * ticks;
+    };
+
+    const Charts = {
+      line(host, { series = [], labels = [], width = 1072, height = 220, yTicks = 4, formatY = (v) => `R$ ${v} mi` } = {}) {
+        const pad = { top: 12, right: 16, bottom: 26, left: 68 };
+        const pw = width - pad.left - pad.right;
+        const ph = height - pad.top - pad.bottom;
+        const flat = series.flatMap((s) => s.values);
+        const max = niceMax(Math.max(1, ...flat), yTicks);
+        const x = (i) => pad.left + (labels.length <= 1 ? pw / 2 : (i / (labels.length - 1)) * pw);
+        const y = (v) => pad.top + ph - (v / max) * ph;
+
+        const svg = svgEl('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', role: 'img' });
+        const grid = svgEl('g', { class: 'grid' });
+        for (let i = 0; i <= yTicks; i++) {
+          const val = (max / yTicks) * i;
+          const yy = Math.round(y(val)) + 0.5;
+          grid.append(svgEl('line', { x1: pad.left, x2: width - pad.right, y1: yy, y2: yy }));
+          grid.append(svgEl('text', { x: pad.left - 10, y: yy + 4, 'text-anchor': 'end' }, formatY(Math.round(val))));
+        }
+        svg.append(grid);
+
+        const step = Math.max(1, Math.ceil(labels.length / 10));
+        for (let i = 0; i < labels.length; i += step) {
+          svg.append(svgEl('text', { x: x(i), y: height - 6, 'text-anchor': i === 0 ? 'start' : i >= labels.length - step ? 'end' : 'middle' }, labels[i]));
+        }
+
+        series.forEach((s, idx) => {
+          const color = s.color || `var(--chart-${(idx % 3) + 1})`;
+          const pts = s.values.map((v, i) => [x(i), y(v)]);
+          const d = pts.map(([px, py], i) => (i ? 'L' : 'M') + px.toFixed(1) + ',' + py.toFixed(1)).join(' ');
+          svg.append(svgEl('path', {
+            d,
+            fill: 'none',
+            stroke: color,
+            'stroke-width': s.primary ? 2.5 : 1.5,
+            'stroke-dasharray': s.dashed ? '4 4' : null,
+            'stroke-linejoin': 'round',
+            'stroke-linecap': 'round'
+          }));
+          if (s.primary && pts.length) {
+            const [lx, ly] = pts[pts.length - 1];
+            svg.append(svgEl('line', { x1: lx, x2: lx, y1: pad.top, y2: pad.top + ph, stroke: 'var(--border)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+            svg.append(svgEl('circle', { cx: lx, cy: ly, r: 4, fill: color, stroke: 'var(--surface)', 'stroke-width': 1.5 }));
+          }
+        });
+        host.replaceChildren(svg);
+      },
+
+      columns(host, { labels = [], values = [], compare, width = 560, height = 176, yTicks = 4, formatY = (v) => `R$ ${v}k` } = {}) {
+        const pad = { top: 10, right: 10, bottom: 26, left: 54 };
+        const pw = width - pad.left - pad.right;
+        const ph = height - pad.top - pad.bottom;
+        const max = niceMax(Math.max(1, ...values, ...(compare || [])), yTicks);
+        const slot = pw / Math.max(1, labels.length);
+        const bw = Math.min(24, Math.floor(slot * (compare ? 0.34 : 0.56)));
+        const y = (v) => pad.top + ph - (v / max) * ph;
+
+        const svg = svgEl('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', role: 'img' });
+        const grid = svgEl('g', { class: 'grid' });
+        for (let i = 0; i <= yTicks; i++) {
+          const val = (max / yTicks) * i;
+          const yy = Math.round(y(val)) + 0.5;
+          grid.append(svgEl('line', { x1: pad.left, x2: width - pad.right, y1: yy, y2: yy }));
+          grid.append(svgEl('text', { x: pad.left - 8, y: yy + 4, 'text-anchor': 'end' }, formatY(Math.round(val))));
+        }
+        svg.append(grid);
+
+        labels.forEach((lab, i) => {
+          const cx = pad.left + slot * i + slot / 2;
+          if (compare) {
+            const cy = y(compare[i]);
+            svg.append(svgEl('rect', { x: Math.round(cx - bw - 2), y: Math.round(cy), width: bw, height: Math.max(1, Math.round(pad.top + ph - cy)), rx: 2, fill: '#8a8a8a' }));
+          }
+          const vy = y(values[i]);
+          const x0 = compare ? cx + 2 : cx - bw / 2;
+          svg.append(svgEl('rect', { x: Math.round(x0), y: Math.round(vy), width: bw, height: Math.max(1, Math.round(pad.top + ph - vy)), rx: 2, fill: '#1d5fbf' }));
+          svg.append(svgEl('text', { x: cx, y: height - 6, 'text-anchor': 'middle' }, lab));
+        });
+        host.replaceChildren(svg);
+      },
+
+      bars(host, { items = [], width = 500, rowHeight = 26, format = (v) => String(v) } = {}) {
+        const max = Math.max(1, ...items.map((d) => d.max || d.value));
+        const labelW = 190, valW = 86, barW = width - labelW - valW - 16;
+        const height = items.length * rowHeight;
+        const svg = svgEl('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', role: 'img' });
+        items.forEach((d, i) => {
+          const y = i * rowHeight;
+          const w = Math.max(4, Math.round((d.value / max) * barW));
+          svg.append(svgEl('text', { x: 0, y: y + rowHeight / 2 + 4, style: 'fill:var(--text)' }, d.label));
+          svg.append(svgEl('rect', { x: labelW, y: y + (rowHeight - 10) / 2, width: barW, height: 10, rx: 2, fill: 'var(--rule)' }));
+          svg.append(svgEl('rect', { x: labelW, y: y + (rowHeight - 10) / 2, width: w, height: 10, rx: 2, fill: d.color || '#1d5fbf' }));
+          svg.append(svgEl('text', { x: width, y: y + rowHeight / 2 + 4, 'text-anchor': 'end', style: 'fill:var(--text);font-weight:500' }, format(d.value)));
+        });
+        host.replaceChildren(svg);
+      }
+    };
+
+    // Dataset & Mathematical Reconciliation (every total equals the sum of its parts)
+    const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'];
+    const SERIES_DATA = {
+      cgu:   { label: 'Portal da Transparência (CGU)', v2026: [8.8, 9.1, 9.4, 9.2, 9.6, 9.5, 9.8, 9.7, 9.9, 9.8], v2025: [8.5, 8.7, 9.0, 8.9, 9.2, 9.1, 9.4, 9.3, 9.6, 9.6] },
+      pncp:  { label: 'PNCP Contratos (Lei 14.133)',   v2026: [3.8, 3.9, 4.0, 4.1, 4.2, 4.1, 4.3, 4.2, 4.3, 4.3], v2025: [3.6, 3.7, 3.8, 3.9, 4.0, 3.9, 4.0, 4.1, 4.1, 4.1] },
+      cotas: { label: 'Cotas (Câmara CEAP + Senado)',  v2026: [1.6, 1.7, 1.8, 1.8, 1.9, 1.8, 1.9, 1.9, 1.9, 1.9], v2025: [1.6, 1.7, 1.7, 1.8, 1.8, 1.8, 1.8, 1.8, 1.9, 1.8] }
+    };
+    SERIES_DATA.total = {
+      label: 'Total Federal (4 fontes)',
+      v2026: MONTHS.map((_, i) => Number((SERIES_DATA.cgu.v2026[i] + SERIES_DATA.pncp.v2026[i] + SERIES_DATA.cotas.v2026[i]).toFixed(2))),
+      v2025: MONTHS.map((_, i) => Number((SERIES_DATA.cgu.v2025[i] + SERIES_DATA.pncp.v2025[i] + SERIES_DATA.cotas.v2025[i]).toFixed(2)))
+    };
+
+    const sumArr = (arr) => Math.round(arr.reduce((a, b) => a + b, 0) * 100);
+    console.assert(
+      sumArr(SERIES_DATA.cgu.v2026) + sumArr(SERIES_DATA.pncp.v2026) + sumArr(SERIES_DATA.cotas.v2026) === sumArr(SERIES_DATA.total.v2026),
+      'Falha de reconciliação na série mensal 2026'
+    );
+    console.assert(sumArr(SERIES_DATA.total.v2026) === 15420, 'Soma total deve ser exatamente R$ 154,20 mi');
+
+    const EXPLORER_ROWS = [
+      { date: '22/10/2026', source: 'PNCP', org: 'Ministério da Saúde · UASG 250005', fav: 'Alfa Logística Hospitalar S.A.', doc: '12.345.678/0001-95', hash: 'e3b0c44298fc', epistemic: 'Inferência Estatística (+3,4σ)', pill: 'warn', score: 0.89, cents: 112000000 },
+      { date: '21/10/2026', source: 'CGU',  org: 'Fundo Nacional de Desenvolvimento', fav: 'Construtora Horizonte Ltda.',     doc: '33.190.412/0001-08', hash: '8f14e45fceea', epistemic: 'Inferência Estatística (HHI)',   pill: 'warn', score: 0.84, cents: 48500000 },
+      { date: '20/10/2026', source: 'CEAP', org: 'Câmara dos Deputados · Cota CEAP',  fav: 'Vértice Locação de Veículos',     doc: '41.802.119/0001-77', hash: 'c9f0f895fb98', epistemic: 'Em Triagem Técnica',             pill: 'neu',  score: 0.78, cents: 14250000 },
+      { date: '19/10/2026', source: 'CEAP', org: 'Senado Federal · Cota CEAPS',       fav: 'Instituto Brasiliense de Gestão', doc: '08.912.340/0001-19', hash: '45c48cce2e2d', epistemic: 'Esclarecido c/ Prova',           pill: 'pos',  score: 0.71, cents: 9500000 },
+      { date: '18/10/2026', source: 'CGU',  org: 'Ministério da Educação · CAPES',    fav: 'Beneficiário Pessoa Física',      doc: '***.418.920-**',     hash: 'd3d9446802a4', epistemic: 'Dado Oficial Conciliado',        pill: 'pos',  score: 0.42, cents: 3242000 },
+      { date: '17/10/2026', source: 'PNCP', org: 'Justiça Federal · TRF 1ª Região',   fav: 'TecnoRede Telecomunicações S.A.', doc: '19.440.102/0001-50', hash: '6512bd43d9ca', epistemic: 'Dado Oficial Conciliado',        pill: 'pos',  score: 0.44, cents: 1550000 }
+    ];
+
+    const fmtBRL = (cents) => 'R$ ' + (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtScore = (s) => s.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function renderOverviewCharts(seriesKey = 'total') {
+      const current = SERIES_DATA[seriesKey] || SERIES_DATA.total;
+      const lineHost = document.getElementById('overview-line-chart');
+      if (lineHost) {
+        Charts.line(lineHost, {
+          labels: MONTHS,
+          series: [
+            { name: '2025', values: current.v2025, color: '#8a8a8a', dashed: true },
+            { name: '2026', values: current.v2026, color: '#1d5fbf', primary: true }
+          ],
+          formatY: (v) => `R$ ${v} mi`
+        });
+      }
+
+      const barsHost = document.getElementById('epistemic-bars-chart');
+      if (barsHost) {
+        Charts.bars(barsHost, {
+          items: [
+            { label: 'Dado Oficial (SHA-256)', value: 42850, max: 42850, color: '#1d5fbf' },
+            { label: 'Inferência Estatística', value: 3120,  max: 42850, color: '#141414' },
+            { label: 'Dossiês em Curadoria',   value: 1800,  max: 42850, color: '#8a8a8a' }
+          ],
+          format: (v) => v === 42850 ? '100,0%' : v === 3120 ? '0,73%' : '0,04%'
+        });
+      }
+    }
+
+    function renderDetailChart() {
+      const colHost = document.getElementById('detail-columns-chart');
+      if (colHost) {
+        Charts.columns(colHost, {
+          labels: ['Lote 1 · Sul', 'Lote 2 · Sudeste', 'Lote 3 · Centro', 'Lote 4 · Norte'],
+          values: [290, 310, 265, 255],
+          compare: [190, 205, 175, 170],
+          formatY: (v) => `R$ ${v}k`
+        });
+      }
+    }
+
+    let activeSource = 'all';
+    let searchQuery = '';
+
+    function renderExplorerTable() {
+      const tbody = document.getElementById('explorer-tbody');
+      if (!tbody) return;
+      const q = searchQuery.trim().toLowerCase();
+      const filtered = EXPLORER_ROWS.filter((r) => {
+        const matchSource = activeSource === 'all' || r.source === activeSource;
+        const matchQuery = !q || `${r.org} ${r.fav} ${r.doc} ${r.hash}`.toLowerCase().includes(q);
+        return matchSource && matchQuery;
+      });
+
+      tbody.innerHTML = filtered.map((r) => `
+        <tr data-nav-row="detail" style="cursor:pointer">
+          <td>${r.date}</td>
+          <td>
+            <div class="primary">${r.source} · ${r.org}</div>
+          </td>
+          <td>
+            <span class="primary">${r.fav}</span> <code>${r.doc}</code>
+          </td>
+          <td><code>sha256:${r.hash}</code></td>
+          <td><span class="pill ${r.pill}">${r.epistemic}</span></td>
+          <td class="n">${fmtScore(r.score)}</td>
+          <td class="n money">${fmtBRL(r.cents)}</td>
+        </tr>
+      `).join('');
+
+      const sumCents = filtered.reduce((acc, r) => acc + r.cents, 0);
+      const avgScore = filtered.length ? filtered.reduce((acc, r) => acc + r.score, 0) / filtered.length : 0;
+      document.getElementById('explorer-foot-label').textContent = `Soma conciliada dos registros exibidos (${filtered.length} documento${filtered.length === 1 ? '' : 's'})`;
+      document.getElementById('explorer-foot-score').textContent = `${fmtScore(avgScore)} méd.`;
+      document.getElementById('explorer-foot-total').textContent = fmtBRL(sumCents);
+
+      if (activeSource === 'all' && !q) {
+        console.assert(sumCents === 189042000, 'Soma do explorador deve fechar em R$ 1.890.420,00');
+      }
+    }
+
+    const SCREEN_META = {
+      overview: {
+        title: 'Execução orçamentária e sinais de auditoria',
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados até 23 out 2026 · 18 sinais em triagem técnica e R$ 0,00 de divergência.'
+      },
+      list: {
+        title: 'Explorador de despesas, contratos e cotas',
+        sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
+      },
+      detail: {
+        title: 'Dossiê de verificação técnica · DONB-2026-0142',
+        sub: 'Separação estrita entre dado bruto oficial, inferência estatística paramétrica e limitações de escopo.'
+      },
+      inbox: {
+        title: 'Fila de curadoria e direito de resposta',
+        sub: 'Governança editorial híbrida · Esclarecimentos oficiais publicados lado a lado com o mesmo destaque visual.'
+      }
+    };
+
+    function switchScreen(screenId) {
+      const target = SCREEN_META[screenId] ? screenId : 'overview';
+      document.querySelectorAll('.screen-view').forEach((sec) => {
+        sec.hidden = sec.id !== `screen-${target}`;
+      });
+      document.querySelectorAll('[data-nav]').forEach((btn) => {
+        if (btn.classList.contains('nav-item')) {
+          if (btn.dataset.nav === target) btn.setAttribute('aria-current', 'page');
+          else btn.removeAttribute('aria-current');
+        }
+      });
+      document.getElementById('screen-title').textContent = SCREEN_META[target].title;
+      document.getElementById('screen-sub').textContent = SCREEN_META[target].sub;
+      document.getElementById('main-nav').classList.remove('open');
+
+      if (target === 'overview') renderOverviewCharts();
+      if (target === 'list') renderExplorerTable();
+      if (target === 'detail') renderDetailChart();
+    }
+
+    // Wire up interactive tabs & navigation
+    document.addEventListener('click', (e) => {
+      const navTrigger = e.target.closest('[data-nav]');
+      if (navTrigger) {
+        e.preventDefault();
+        switchScreen(navTrigger.dataset.nav);
+        return;
+      }
+      const rowTrigger = e.target.closest('[data-nav-row]');
+      if (rowTrigger) {
+        switchScreen(rowTrigger.dataset.navRow);
+        return;
+      }
+      const seriesTab = e.target.closest('.chart-tab[data-series]');
+      if (seriesTab) {
+        document.querySelectorAll('.chart-tab[data-series]').forEach((b) => b.setAttribute('aria-selected', String(b === seriesTab)));
+        renderOverviewCharts(seriesTab.dataset.series);
+        return;
+      }
+      const sourceTab = e.target.closest('#explorer-source-tabs button[data-source]');
+      if (sourceTab) {
+        document.querySelectorAll('#explorer-source-tabs button[data-source]').forEach((b) => b.setAttribute('aria-selected', String(b === sourceTab)));
+        activeSource = sourceTab.dataset.source;
+        renderExplorerTable();
+      }
+    });
+
+    document.getElementById('btn-mobile-menu')?.addEventListener('click', () => {
+      document.getElementById('main-nav').classList.toggle('open');
+    });
+
+    document.getElementById('explorer-filter-input')?.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderExplorerTable();
+    });
+
+    document.getElementById('global-search')?.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      switchScreen('list');
+      const localInput = document.getElementById('explorer-filter-input');
+      if (localInput) localInput.value = searchQuery;
+      renderExplorerTable();
+    });
+
+    // Initial render supports ?screen=overview|list|detail|inbox for automated inspection of every screen
+    const initialScreen = new URLSearchParams(window.location.search).get('screen') || 'overview';
+    renderOverviewCharts('total');
+    renderExplorerTable();
+    renderDetailChart();
+    switchScreen(initialScreen);
+  </script>
+</body>
+</html>

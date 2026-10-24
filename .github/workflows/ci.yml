@@ -1,0 +1,33 @@
+name: De Olho no Brasil — SDD Verification Loop & Eval Harness
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+
+permissions:
+  contents: read
+
+jobs:
+  sdd-eval-harness:
+    name: 8-Phase SDD & 6-Phase Verification Loop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Unit & Integration Test Suite (TDD Gate)
+        env:
+          PYTHONPATH: src
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Run Executable SDD & Eval Harness (pass^3 == 1.0)
+        env:
+          PYTHONPATH: src
+        run: python3 -m deolhonobrasil.harness.runner --checkpoint 4 --trials 3

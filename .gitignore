@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Testing & Static Analysis
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Data Lakehouse Local Storage (Raw, Quarantine, Curated, SQLite)
+data/raw/*
+!data/raw/.gitkeep
+data/quarantine/*
+!data/quarantine/.gitkeep
+data/curated/*
+!data/curated/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+*.parquet
+
+# Node / Next.js (for Phase 5)
+node_modules/
+.next/
+out/
+
+# OS & IDEs
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,8 @@
+services:
+  deolhonobrasil-harness:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PYTHONPATH: /app/src
+    command: ["python3", "-m", "deolhonobrasil.harness.runner", "--checkpoint", "4", "--trials", "3"]

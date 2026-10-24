@@ -1,0 +1,4 @@
+"""Pacote raiz da plataforma cívica De Olho no Brasil."""
+
+__version__ = "0.1.0"
+__license__ = "AGPL-3.0-or-later"

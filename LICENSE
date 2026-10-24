@@ -1,0 +1,37 @@
+# Licenciamento em Camadas — De Olho no Brasil
+
+Este repositório adota uma estratégia de licenciamento em camadas para garantir colaboração aberta, impedir captura proprietária em serviços de rede (SaaS) e proteger a integridade editorial e a marca do projeto.
+
+---
+
+## 1. Código-Fonte (`GNU Affero General Public License v3.0 or later — AGPL-3.0-or-later`)
+
+Todo o código-fonte contido neste repositório (`src/`, `tests/`, `scripts/`, `infra/`, `apps/`, `packages/`) é software livre licenciado sob os termos da **GNU Affero General Public License v3.0 (AGPL-3.0)** ou posterior, conforme publicada pela Free Software Foundation.
+
+### Resumo das Obrigações Principais da AGPL-3.0 (Seção 13 — Interação Remota via Rede):
+Se você modificar este software e disponibilizá-lo para usuários interagirem remotamente através de uma rede de computadores (por exemplo, hospedando um portal web ou API baseada neste código), **você é obrigado a disponibilizar o código-fonte completo correspondente da sua versão modificada** a todos os usuários que interagirem com ele pela rede, sob a mesma licença AGPL-3.0.
+
+### Isenção de Garantia (Seções 15 e 16 da AGPL-3.0):
+ESTE PROGRAMA É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA" (*AS IS*), SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UMA FINALIDADE ESPECÍFICA E NÃO VIOLAÇÃO.
+
+*(Nota Jurídica Importante: A licença de software rege apenas direitos autorais sobre o código-fonte e não constitui imunidade civil ou criminal por atos ilícitos independentes do licenciamento).*
+
+Texto oficial integral da licença: <https://www.gnu.org/licenses/agpl-3.0.txt>
+
+---
+
+## 2. Dados Públicos de Origem e Dados Derivados (`CC-BY-4.0`)
+
+1. **Dados Públicos Governamentais Brutos (`Camada Raw`):**
+   São provenientes de fontes oficiais da República Federativa do Brasil (Câmara dos Deputados, Senado Federal, Portal da Transparência/CGU, PNCP, Receita Federal e IBGE), regidos pela **Lei de Acesso à Informação (Lei nº 12.527/2011)** e pelo **Decreto nº 8.777/2016 (Política de Dados Abertos)**.
+2. **Dados Derivados, Indicadores e Catálogos (`Camada Curated` e `Publication`):**
+   São disponibilizados sob a licença **Creative Commons Atribuição 4.0 Internacional (`CC-BY-4.0`)**, desde que qualquer redistribuição preserve:
+   - A citação da fonte primária oficial governamental;
+   - A atribuição ao projeto **De Olho no Brasil**;
+   - Os metadados de proveniência (`source_url`, `sha256_hash`, `collected_at`), as limitações metodológicas e eventuais notas de esclarecimento/contestação vinculadas ao registro.
+
+---
+
+## 3. Marca, Nome e Identidade Visual (`Todos os Direitos Reservados`)
+
+Os nomes **"De Olho no Brasil"**, logotipos, selos de verificação e textos editoriais assinados pela curadoria **não** estão cobertos pela licença AGPL-3.0. Consulte [`TRADEMARK.md`](TRADEMARK.md) para detalhes.
