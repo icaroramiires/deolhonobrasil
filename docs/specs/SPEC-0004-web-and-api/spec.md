@@ -7,15 +7,15 @@
 
 ## 2. Status e Versão
 - **Status:** `Verificado`
-- **Versão:** `1.1.0`
-- **Data:** `2026-10-23`
+- **Versão:** `1.2.0`
+- **Data:** `2026-10-24`
 
 ## 3. Problema e Motivação
 Cidadãos, jornalistas e pesquisadores precisam consultar dossiês revisados, despesas curadas e relatórios de reconciliação contábil por meio de uma interface web de alta precisão (`achromatic-ledger`) e de uma API REST auditável, protegida contra abuso (rate limiting), injeção de prompts, vazamento de dados pessoais (LGPD) e exposição acidental de dossiês ainda em triagem interna (`EM_TRIAGEM_INTERNA`). Além disso, o projeto precisa de infraestrutura CI/CD e containers reprodutíveis que executem o *Eval Harness* automaticamente.
 
 ## 4. Objetivos e Não-Objetivos
 ### Objetivos
-- Disponibilizar o wireframe interativo `wireframe_de_olho_no_brasil.html` (`achromatic-ledger`, seed `2125632542`) com reconciliação matemática no cliente (`console.assert`).
+- Disponibilizar o wireframe interativo `wireframe_de_olho_no_brasil.html` (`achromatic-ledger`, seed `2125632542`) cobrindo as 14 regras determinísticas de auditoria (`SPEC-0001..0012`), com filtros de fontes/categorias, dossiê dinâmico, dupla proveniência `SHA-256`, download de pacotes de evidências e reconciliação matemática no cliente (`console.assert`).
 - Implementar a API REST em `src/deolhonobrasil/api/` servindo `/api/v1/dossiers`, `/api/v1/expenses`, `/api/v1/reconciliation`, `/api/v1/health` e `POST /api/v1/right-of-reply`.
 - Garantir isolamento por perfil (`AccessRole.PUBLIC_READER` vs `AccessRole.REVIEWER_ADMIN`), rate limiting (`HTTP 429`), headers de segurança HTTP e validação estrita de Direito de Resposta.
 - Prover `Dockerfile`, `docker-compose.yml` e `.github/workflows/ci.yml` executando o harness SDD.
@@ -41,7 +41,7 @@ Cidadãos, jornalistas e pesquisadores precisam consultar dossiês revisados, de
 - **Tentativa de Acesso a Dossiês em Triagem sem Credencial Admin:** Retorna `HTTP 403 Forbidden` (se solicitado papel admin sem token válido) ou oculta estritamente registros `EM_TRIAGEM_INTERNA` no perfil público.
 
 ## 8. Requisitos Funcionais
-- **FR-010:** A interface `wireframe_de_olho_no_brasil.html` deve implementar a direção `achromatic-ledger` com 3 camadas epistêmicas, `tabular-nums`, inspetor `SHA-256` e comparação lado a lado do Direito de Resposta.
+- **FR-010:** A interface `wireframe_de_olho_no_brasil.html` deve implementar a direção `achromatic-ledger` com 3 camadas epistêmicas, `tabular-nums`, inspetor `SHA-256`, suporte completo à navegação e inspeção das 14 regras de auditoria (`SPEC-0001..0012`), alternador dinâmico de dossiês, exportação de evidências e comparação lado a lado do Direito de Resposta.
 - **FR-011:** A API REST (`src/deolhonobrasil/api/`) deve servir `GET /api/v1/health`, `GET /api/v1/dossiers`, `GET /api/v1/expenses`, `GET /api/v1/reconciliation` e `POST /api/v1/right-of-reply` integrados ao `CivicLakehouseStorage`.
 
 ## 9. Requisitos Não Funcionais

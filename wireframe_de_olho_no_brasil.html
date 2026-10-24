@@ -187,7 +187,7 @@
     }
 
     /* Controls */
-    .btn, .input, .seg {
+    .btn, .input, .select, .seg {
       height: var(--ctrl-h);
       border-radius: var(--radius-control);
       font: 500 13px/1 var(--font);
@@ -216,19 +216,21 @@
       color: var(--text);
       border-color: transparent;
     }
-    .input {
+    .input, .select {
       padding: 0 10px;
       border: 1px solid var(--control);
       background: var(--surface);
       color: var(--text);
-      width: 200px;
     }
+    .input { width: 220px; }
     .input::placeholder { color: var(--muted); }
+    .select { cursor: pointer; }
     .seg {
       display: inline-flex;
       padding: 2px;
       background: var(--raised);
       border: 1px solid var(--border);
+      flex-wrap: wrap;
     }
     .seg button {
       border: 0;
@@ -238,10 +240,12 @@
       border-radius: calc(var(--radius-control) - 2px);
       font: inherit;
       cursor: pointer;
+      white-space: nowrap;
     }
     .seg button[aria-selected="true"] {
       background: var(--surface);
       color: var(--text);
+      font-weight: 600;
     }
 
     /* Panels & Grids */
@@ -330,8 +334,8 @@
       flex-wrap: wrap;
     }
     .kpi-value {
-      font-size: 28px;
-      font-weight: 500;
+      font-size: 26px;
+      font-weight: 600;
       letter-spacing: -0.025em;
       line-height: 1.1;
       font-variant-numeric: tabular-nums;
@@ -464,7 +468,7 @@
       height: 22px;
       padding: 0 8px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       line-height: 1;
       white-space: nowrap;
@@ -514,6 +518,7 @@
       justify-content: space-between;
       gap: 10px;
       font-size: 13px;
+      flex-wrap: wrap;
     }
     .epistemic-list {
       display: flex;
@@ -630,10 +635,10 @@
             Visão geral
           </button>
           <button type="button" class="nav-item" data-nav="list">
-            Explorador <span class="nav-count">42.850</span>
+            Explorador <span class="nav-count">14 Regras</span>
           </button>
           <button type="button" class="nav-item" data-nav="detail">
-            Dossiê SHA-256 <span class="nav-count">18</span>
+            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">14</span>
           </button>
           <button type="button" class="nav-item" data-nav="inbox">
             Direito de resposta <span class="nav-count">4</span>
@@ -652,7 +657,7 @@
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
-          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados até 23 out 2026 · 18 sinais em triagem técnica e R$ 0,00 de divergência.</p>
+          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 14 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
         </div>
         <div class="head-actions">
           <div class="seg" role="tablist" aria-label="Exercício fiscal">
@@ -672,7 +677,7 @@
               <span class="kpi-value money">R$ 154,20 mi</span>
               <span class="delta up">+4,2%</span>
             </div>
-            <div class="kpi-sub">Soma exata das 4 fontes oficiais</div>
+            <div class="kpi-sub">Soma exata das fontes oficiais</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Registros com prova SHA-256</div>
@@ -683,12 +688,12 @@
             <div class="kpi-sub">28 registros inválidos em quarentena</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Sinais em revisão técnica</div>
+            <div class="kpi-label">Regras de auditoria ativas</div>
             <div class="kpi-row">
-              <span class="kpi-value">18</span>
-              <span class="delta down">+3 na semana</span>
+              <span class="kpi-value">14 regras</span>
+              <span class="delta down">14 dossiês</span>
             </div>
-            <div class="kpi-sub">Desvio estatístico acima de 3,0σ</div>
+            <div class="kpi-sub">Triagem Laya ONNX (System 1)</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Divergência de conciliação</div>
@@ -756,13 +761,13 @@
               </thead>
               <tbody>
                 <tr>
-                  <td class="primary">Portal da Transparência (CGU · Emendas e Favorecidos)</td>
+                  <td class="primary">Portal da Transparência (CGU · Emendas, Favorecidos e CEIS/CNEP)</td>
                   <td class="n">19.420</td>
                   <td class="n money">R$ 94,80 mi</td>
                   <td class="n"><span class="delta up">+3,8%</span></td>
                 </tr>
                 <tr>
-                  <td class="primary">Portal Nacional de Contratações Públicas (PNCP · Contratos)</td>
+                  <td class="primary">Portal Nacional de Contratações Públicas (PNCP · Contratos Lei 14.133)</td>
                   <td class="n">8.910</td>
                   <td class="n money">R$ 41,20 mi</td>
                   <td class="n"><span class="delta up">+5,1%</span></td>
@@ -792,32 +797,32 @@
 
             <div class="kv-list" style="margin-top: 6px;">
               <div class="kv-row">
-                <span class="kv-label">1. Dado Oficial Bruto (Parquet R2)</span>
+                <span class="kv-label">1. [DADO OFICIAL] Bruto (Parquet R2)</span>
                 <span class="kv-val">42.850 docs · 100,0%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">2. Inferência Estatística (Z-Score / HHI)</span>
+                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (14 Regras)</span>
                 <span class="kv-val">312 sinais · 0,73%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">3. Dossiês em Curadoria (Laya ONNX)</span>
-                <span class="kv-val">18 dossiês · 0,04%</span>
+                <span class="kv-label">3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO]</span>
+                <span class="kv-val">14 dossiês em curadoria · 0,03%</span>
               </div>
             </div>
 
             <div class="custody-strip">
-              <span>Raiz do lote: <code>sha256:9f86d081884c7d65</code></span>
-              <button type="button" class="btn" data-nav="detail">Inspecionar prova</button>
+              <span>Raiz criptográfica do lote: <code>sha256:9f86d081884c7d65</code></span>
+              <button type="button" class="btn" data-nav="detail" data-dossier-id="DONB-2026-0142">Inspecionar prova</button>
             </div>
           </article>
 
           <article class="card card-flush">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Sinais matemáticos prioritários</h2>
+                <h2 class="card-title">Sinais matemáticos prioritários (14 Regras)</h2>
                 <div class="card-meta">Triagem Laya ONNX + regras determinísticas</div>
               </div>
-              <button type="button" class="btn" data-nav="list">Ver todos</button>
+              <button type="button" class="btn" data-nav="list">Ver todas as 14</button>
             </div>
 
             <div class="table-wrap">
@@ -831,36 +836,48 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr data-nav-row="detail" style="cursor: pointer;">
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0142" style="cursor: pointer;">
                     <td><code>DONB-2026-0142</code></td>
-                    <td><span class="pill warn">Sobrepreço +3,4σ</span></td>
+                    <td><span class="pill warn">Sobrepreço +3,40σ</span></td>
                     <td class="n">0,89</td>
                     <td class="n money">R$ 1.120.000,00</td>
                   </tr>
-                  <tr data-nav-row="detail" style="cursor: pointer;">
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0152" style="cursor: pointer;">
+                    <td><code>DONB-2026-0152</code></td>
+                    <td><span class="pill warn">Sanção Ativa CEIS</span></td>
+                    <td class="n">0,92</td>
+                    <td class="n money">R$ 380.000,00</td>
+                  </tr>
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0139" style="cursor: pointer;">
                     <td><code>DONB-2026-0139</code></td>
-                    <td><span class="pill warn">Concentração HHI</span></td>
+                    <td><span class="pill warn">Concentração HHI 3.420</span></td>
                     <td class="n">0,84</td>
                     <td class="n money">R$ 485.000,00</td>
                   </tr>
-                  <tr data-nav-row="detail" style="cursor: pointer;">
-                    <td><code>DONB-2026-0131</code></td>
-                    <td><span class="pill neu">CNPJ recém-aberto</span></td>
-                    <td class="n">0,78</td>
-                    <td class="n money">R$ 142.500,00</td>
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0155" style="cursor: pointer;">
+                    <td><code>DONB-2026-0155</code></td>
+                    <td><span class="pill warn">Cruzamento Doador TSE</span></td>
+                    <td class="n">0,87</td>
+                    <td class="n money">R$ 150.000,00</td>
                   </tr>
-                  <tr data-nav-row="inbox" style="cursor: pointer;">
-                    <td><code>DONB-2026-0124</code></td>
-                    <td><span class="pill pos">Resposta anexada</span></td>
-                    <td class="n">0,71</td>
-                    <td class="n money">R$ 95.000,00</td>
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0148" style="cursor: pointer;">
+                    <td><code>DONB-2026-0148</code></td>
+                    <td><span class="pill warn">Sobreposição DF/SP</span></td>
+                    <td class="n">0,85</td>
+                    <td class="n money">R$ 4.820,00</td>
+                  </tr>
+                  <tr data-nav-row="detail" data-dossier-id="DONB-2026-0145" style="cursor: pointer;">
+                    <td><code>DONB-2026-0145</code></td>
+                    <td><span class="pill warn">Desvio Benford MAD</span></td>
+                    <td class="n">0,79</td>
+                    <td class="n money">R$ 215.000,00</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="2">Soma conciliada (4 dossiês)</td>
-                    <td class="n">0,81</td>
-                    <td class="n money">R$ 1.842.500,00</td>
+                    <td colspan="2">Soma conciliada (amostra 6 dossiês)</td>
+                    <td class="n">0,86</td>
+                    <td class="n money">R$ 2.354.820,00</td>
                   </tr>
                 </tfoot>
               </table>
@@ -874,13 +891,29 @@
         <article class="card card-flush">
           <div class="toolbar">
             <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
-              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (6)</button>
+              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (14)</button>
               <button type="button" role="tab" aria-selected="false" data-source="PNCP">PNCP Contratos</button>
               <button type="button" role="tab" aria-selected="false" data-source="CGU">CGU Transparência</button>
               <button type="button" role="tab" aria-selected="false" data-source="CEAP">Câmara / Senado</button>
+              <button type="button" role="tab" aria-selected="false" data-source="TSE">TSE Eleições</button>
             </div>
+
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido ou CNPJ" aria-label="Buscar favorecido ou CNPJ">
+              <select class="select" id="explorer-rule-select" aria-label="Filtrar por categoria de regra">
+                <option value="all">Todas as Categorias (14 Regras)</option>
+                <option value="Sobrecusto & Catálogo">Sobrecusto & Catálogo (Z-Score)</option>
+                <option value="Concentração & Monopólio">Concentração & Monopólio (HHI/80%)</option>
+                <option value="Cota Parlamentar">Cota Parlamentar (CEAP Outlier)</option>
+                <option value="Fornecedores, Sanções & Monopólio">Fornecedores & Sanções (CEIS/CNEP)</option>
+                <option value="Emendas & Orçamento">Emendas & Orçamento (Execução)</option>
+                <option value="Sobrecusto & Estatística">Estatística (Benford & Fracionamento)</option>
+                <option value="Rede Societária">Rede Societária (Radical CNPJ)</option>
+                <option value="Sobreposição & Duplicidade">Sobreposição & Duplicidade (Notas/UFs)</option>
+                <option value="Temporal, Feriados & Recesso">Temporal (Fim de Semana/Recesso)</option>
+                <option value="Eleitoral TSE">Eleitoral TSE (Doação e Fornecimento)</option>
+              </select>
+
+              <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido, regra ou CNPJ" aria-label="Buscar favorecido, regra ou CNPJ">
               <span class="pill neu">CPF mascarado (LGPD Art. 6º)</span>
             </div>
           </div>
@@ -891,6 +924,7 @@
                 <tr>
                   <th>Data</th>
                   <th>Fonte / Órgão</th>
+                  <th>Regra de Auditoria</th>
                   <th>Favorecido (CNPJ / CPF LGPD)</th>
                   <th>Prova SHA-256</th>
                   <th>Classificação epistêmica</th>
@@ -901,53 +935,67 @@
               <tbody id="explorer-tbody"></tbody>
               <tfoot>
                 <tr>
-                  <td colspan="5" id="explorer-foot-label">Soma conciliada dos registros exibidos (6 documentos)</td>
-                  <td class="n" id="explorer-foot-score">0,68 méd.</td>
-                  <td class="n money" id="explorer-foot-total">R$ 1.890.420,00</td>
+                  <td colspan="6" id="explorer-foot-label">Soma conciliada dos registros exibidos (14 documentos)</td>
+                  <td class="n" id="explorer-foot-score">0,83 méd.</td>
+                  <td class="n money" id="explorer-foot-total">R$ 4.154.750,00</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
           <div class="card-foot">
-            <span>Cada linha preserva o link direto para o JSON/CSV original e o hash SHA-256 calculado no momento da coleta.</span>
-            <span>Licença dos dados derivados: CC-BY-4.0</span>
+            <span>Cada linha preserva a proveniência SHA-256 e abre o dossiê detalhado em 3 camadas epistêmicas ao ser clicada.</span>
+            <span>Licença dos dados derivados: CC-BY-4.0 · Total conciliado exato: <code>R$ 4.154.750,00</code></span>
           </div>
         </article>
       </section>
 
       <!-- SCREEN 3: DETAIL (Dossiê de Verificação SHA-256) -->
       <section class="screen-view stack" id="screen-detail" hidden aria-label="Dossiê de verificação técnica">
-        <div class="kpis" role="region" aria-label="Métricas do dossiê DONB-2026-0142">
+        <div class="page-head" style="margin-bottom: 0;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <label for="dossier-picker" style="font-size: 13px; font-weight: 600; color: var(--muted);">Dossiê em Análise:</label>
+            <select class="select" id="dossier-picker" style="font-weight: 600;">
+              <!-- Populated dynamically via JS -->
+            </select>
+            <span class="pill warn" id="detail-triage-pill">Triagem Técnica (RLS)</span>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn" id="btn-download-evidence-bundle">Baixar Pacote de Evidências (JSON/SHA-256)</button>
+            <button type="button" class="btn btn-primary" id="btn-copy-hash">Copiar Hash SHA-256</button>
+          </div>
+        </div>
+
+        <div class="kpis" role="region" aria-label="Métricas do dossiê selecionado">
           <div class="kpi">
-            <div class="kpi-label">Valor global do contrato</div>
+            <div class="kpi-label">Valor sob auditoria</div>
             <div class="kpi-row">
-              <span class="kpi-value money">R$ 1.120.000,00</span>
+              <span class="kpi-value money" id="detail-kpi-value">R$ 1.120.000,00</span>
             </div>
-            <div class="kpi-sub">Contrato PNCP nº 042/2026 · 12 meses</div>
+            <div class="kpi-sub" id="detail-kpi-sub">Contrato PNCP nº 042/2026 · 12 meses</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Mediana de referência (CATSER)</div>
+            <div class="kpi-label" id="detail-kpi-metric-label">Mediana de referência (CATSER)</div>
             <div class="kpi-row">
-              <span class="kpi-value money">R$ 740.000,00</span>
-              <span class="delta down">+51,4% acima</span>
+              <span class="kpi-value money" id="detail-kpi-metric-val">R$ 740.000,00</span>
+              <span class="delta down" id="detail-kpi-delta">+51,4% acima</span>
             </div>
-            <div class="kpi-sub">Base: 48 contratos federais similares</div>
+            <div class="kpi-sub" id="detail-kpi-metric-sub">Base: 48 contratos similares</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Desvio estatístico (Z-Score)</div>
+            <div class="kpi-label">Indicador de anomalia</div>
             <div class="kpi-row">
-              <span class="kpi-value">+3,40σ</span>
-              <span class="delta down">Laya 0,89</span>
+              <span class="kpi-value" id="detail-kpi-indicator">+3,40σ</span>
+              <span class="delta down" id="detail-kpi-laya">Laya 0,89</span>
             </div>
-            <div class="kpi-sub">Limiar de revisão técnica: 3,00σ</div>
+            <div class="kpi-sub" id="detail-kpi-threshold">Limiar de revisão: 3,00σ</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Status de direito de resposta</div>
+            <div class="kpi-label">Direito de resposta (Paritário)</div>
             <div class="kpi-row">
-              <span class="kpi-value">Aberto</span>
+              <span class="kpi-value" id="detail-kpi-reply-status">Aberto</span>
             </div>
-            <div class="kpi-sub">Notificação técnica disponível ao órgão</div>
+            <div class="kpi-sub">Notificação técnica disponível</div>
           </div>
         </div>
 
@@ -955,39 +1003,39 @@
           <article class="card">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Camadas epistêmicas · Dossiê <code>DONB-2026-0142</code></h2>
+                <h2 class="card-title">Camadas Epistêmicas · <code id="detail-title-id">DONB-2026-0142</code></h2>
                 <div class="card-meta">Linguagem neutra verificada por validador léxico · Proibido uso de termos acusatórios</div>
               </div>
-              <span class="pill warn">Triagem técnica</span>
+              <span class="pill neu" id="detail-rule-tag">R-PNCP-OVERPRICE-Z3</span>
             </div>
 
             <div class="epistemic-list">
               <div class="epistemic-block">
                 <div class="epistemic-head">
-                  <span>1. [DADO OFICIAL] · Registro primário no PNCP</span>
-                  <code>ID: 00394544000185-1-000142/2026</code>
+                  <span>1. [DADO OFICIAL] · Registro primário nas bases governamentais</span>
+                  <code id="detail-official-id">ID: 00394544000185-1-000142/2026</code>
                 </div>
-                <p class="epistemic-body">
+                <p class="epistemic-body" id="detail-official-text">
                   Contrato firmado em 14/08/2026 entre Coordenação Logística (UASG 250005) e Alfa Logística Hospitalar S.A. (CNPJ <code>12.345.678/0001-95</code>) no valor global de <strong>R$ 1.120.000,00</strong> para armazenagem climatizada de insumos.
                 </p>
               </div>
 
               <div class="epistemic-block">
                 <div class="epistemic-head">
-                  <span>2. [INFERÊNCIA ESTATÍSTICA] · Comparação paramétrica</span>
-                  <span>Regra: <code>R-PNCP-OVERPRICE-Z3</code></span>
+                  <span>2. [INFERÊNCIA ESTATÍSTICA] · Comparação paramétrica e matemática</span>
+                  <span id="detail-stat-rule">Regra: <code>R-PNCP-OVERPRICE-Z3</code></span>
                 </div>
-                <p class="epistemic-body">
+                <p class="epistemic-body" id="detail-stat-text">
                   O custo unitário contratado por posição-palete refrigerada (<strong>R$ 280,00/mês</strong> para 4.000 posições) situa-se <strong>3,40 desvios-padrão</strong> acima da mediana nacional do catálogo CATSER 24812 (<strong>R$ 185,00/mês</strong>).
                 </p>
               </div>
 
               <div class="epistemic-block">
                 <div class="epistemic-head">
-                  <span>3. [LIMITAÇÃO E HIPÓTESE] · O que os dados não provam sozinhos</span>
+                  <span>3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO] · O que os dados não provam</span>
                   <span>Motor: <code>Laya-ONNX-v1</code></span>
                 </div>
-                <p class="epistemic-body">
+                <p class="epistemic-body" id="detail-limit-text">
                   A divergência estatística não configura irregularidade por si só. Exigências de redundância elétrica hospitalar (-80°C) ou frete aéreo emergencial podem justificar o custo adicional mediante apresentação do Termo de Referência.
                 </p>
               </div>
@@ -995,50 +1043,54 @@
 
             <div style="margin-top: 16px;">
               <div class="card-head" style="margin-bottom: 6px;">
-                <h3 class="card-title" style="font-size: 14px;">Comparativo de preço unitário mensal por lote (R$ mil)</h3>
-                <span class="card-meta">Azul: Contrato auditado · Cinza: Mediana CATSER</span>
+                <h3 class="card-title" style="font-size: 14px;" id="detail-chart-title">Comparativo de valor por lote (R$ mil)</h3>
+                <span class="card-meta">Azul: Registro auditado · Cinza: Mediana / Referência normativa</span>
               </div>
-              <div id="detail-columns-chart" aria-label="Gráfico de colunas comparativo de preços"></div>
+              <div id="detail-columns-chart" aria-label="Gráfico de colunas comparativo"></div>
             </div>
           </article>
 
           <article class="card">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Cadeia de custódia e reprodutibilidade</h2>
-                <div class="card-meta">Qualquer cidadão pode recalcular este resultado localmente</div>
+                <h2 class="card-title">Cadeia de custódia e proveniência</h2>
+                <div class="card-meta">Qualquer cidadão pode auditar e recalcular este resultado localmente</div>
               </div>
               <span class="pill pos">SHA-256 íntegro</span>
             </div>
 
             <div class="kv-list">
               <div class="kv-row">
-                <span class="kv-label">Fonte governamental</span>
-                <span class="kv-val">API PNCP v1 · Contratos</span>
+                <span class="kv-label">Fonte governamental primária</span>
+                <span class="kv-val" id="detail-kv-source">API PNCP v1 · Contratos</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">Timestamp de coleta (UTC)</span>
-                <span class="kv-val"><code>2026-10-23T06:12:44Z</code></span>
+                <span class="kv-label">Data de emissão / registro</span>
+                <span class="kv-val" id="detail-kv-date">22/10/2026</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">Hash SHA-256 do payload bruto</span>
-                <span class="kv-val"><code>e3b0c44298fc1c149afbf4c8</code></span>
+                <span class="kv-label">Hash SHA-256 (Lote Bruto Primário)</span>
+                <span class="kv-val"><code id="detail-kv-hash">e3b0c44298fc1c14...</code></span>
+              </div>
+              <div class="kv-row" id="detail-kv-sec-row">
+                <span class="kv-label">Hash SHA-256 (Fonte Cruzada / Doação)</span>
+                <span class="kv-val"><code id="detail-kv-sec-hash">N/A (Fonte Única)</code></span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">Arquivo Parquet (Cloudflare R2)</span>
-                <span class="kv-val"><code>r2://donb-raw/2026/10/pncp_0142.parquet</code></span>
+                <span class="kv-label">Armazenamento lakehouse Parquet</span>
+                <span class="kv-val"><code id="detail-kv-parquet">r2://donb-raw/2026/10/pncp_0142.parquet</code></span>
               </div>
               <div class="kv-row">
                 <span class="kv-label">Decisão System 1 (Laya Choice/Score)</span>
-                <span class="kv-val"><code>REVISAO_HUMANA (0,89)</code></span>
+                <span class="kv-val"><code id="detail-kv-decision">REVISAO_HUMANA (0,89)</code></span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">Revisor responsável (RLS)</span>
-                <span class="kv-val"><code>reviewer_admin · Fundador</code></span>
+                <span class="kv-label">Regra de isolamento de governança (RLS)</span>
+                <span class="kv-val"><code>EM_TRIAGEM_INTERNA (Oculto a Leitores Públicos)</code></span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">Diferença orçamentária sob análise</span>
-                <span class="kv-val money">R$ 380.000,00</span>
+                <span class="kv-label">Montante auditado</span>
+                <span class="kv-val money" id="detail-kv-amount">R$ 1.120.000,00</span>
               </div>
             </div>
 
@@ -1048,8 +1100,8 @@
                 <div style="color: var(--muted); margin-top: 2px;">Órgãos públicos e fornecedores têm destaque equivalente.</div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-secondary-pill" data-nav="inbox">Protocolar resposta</button>
-                <button type="button" class="btn btn-primary" id="btn-copy-hash">Copiar SHA-256</button>
+                <button type="button" class="btn btn-secondary-pill" data-nav="inbox" id="btn-detail-go-reply">Protocolar resposta</button>
+                <button type="button" class="btn" id="btn-quick-copy-dossier-hash">Copiar Hash</button>
               </div>
             </div>
           </article>
@@ -1252,12 +1304,12 @@
 
         labels.forEach((lab, i) => {
           const cx = pad.left + slot * i + slot / 2;
-          if (compare) {
+          if (compare && compare[i] != null) {
             const cy = y(compare[i]);
             svg.append(svgEl('rect', { x: Math.round(cx - bw - 2), y: Math.round(cy), width: bw, height: Math.max(1, Math.round(pad.top + ph - cy)), rx: 2, fill: '#8a8a8a' }));
           }
           const vy = y(values[i]);
-          const x0 = compare ? cx + 2 : cx - bw / 2;
+          const x0 = (compare && compare[i] != null) ? cx + 2 : cx - bw / 2;
           svg.append(svgEl('rect', { x: Math.round(x0), y: Math.round(vy), width: bw, height: Math.max(1, Math.round(pad.top + ph - vy)), rx: 2, fill: '#1d5fbf' }));
           svg.append(svgEl('text', { x: cx, y: height - 6, 'text-anchor': 'middle' }, lab));
         });
@@ -1301,13 +1353,386 @@
     );
     console.assert(sumArr(SERIES_DATA.total.v2026) === 15420, 'Soma total deve ser exatamente R$ 154,20 mi');
 
+    // 14 Realistic Curated Audit Dossiers covering all rules from SPEC-0001 to SPEC-0012
     const EXPLORER_ROWS = [
-      { date: '22/10/2026', source: 'PNCP', org: 'Ministério da Saúde · UASG 250005', fav: 'Alfa Logística Hospitalar S.A.', doc: '12.345.678/0001-95', hash: 'e3b0c44298fc', epistemic: 'Inferência Estatística (+3,4σ)', pill: 'warn', score: 0.89, cents: 112000000 },
-      { date: '21/10/2026', source: 'CGU',  org: 'Fundo Nacional de Desenvolvimento', fav: 'Construtora Horizonte Ltda.',     doc: '33.190.412/0001-08', hash: '8f14e45fceea', epistemic: 'Inferência Estatística (HHI)',   pill: 'warn', score: 0.84, cents: 48500000 },
-      { date: '20/10/2026', source: 'CEAP', org: 'Câmara dos Deputados · Cota CEAP',  fav: 'Vértice Locação de Veículos',     doc: '41.802.119/0001-77', hash: 'c9f0f895fb98', epistemic: 'Em Triagem Técnica',             pill: 'neu',  score: 0.78, cents: 14250000 },
-      { date: '19/10/2026', source: 'CEAP', org: 'Senado Federal · Cota CEAPS',       fav: 'Instituto Brasiliense de Gestão', doc: '08.912.340/0001-19', hash: '45c48cce2e2d', epistemic: 'Esclarecido c/ Prova',           pill: 'pos',  score: 0.71, cents: 9500000 },
-      { date: '18/10/2026', source: 'CGU',  org: 'Ministério da Educação · CAPES',    fav: 'Beneficiário Pessoa Física',      doc: '***.418.920-**',     hash: 'd3d9446802a4', epistemic: 'Dado Oficial Conciliado',        pill: 'pos',  score: 0.42, cents: 3242000 },
-      { date: '17/10/2026', source: 'PNCP', org: 'Justiça Federal · TRF 1ª Região',   fav: 'TecnoRede Telecomunicações S.A.', doc: '19.440.102/0001-50', hash: '6512bd43d9ca', epistemic: 'Dado Oficial Conciliado',        pill: 'pos',  score: 0.44, cents: 1550000 }
+      {
+        id: 'DONB-2026-0142',
+        date: '22/10/2026',
+        source: 'PNCP',
+        ruleCode: 'R-PNCP-OVERPRICE-Z3',
+        category: 'Sobrecusto & Catálogo',
+        org: 'Ministério da Saúde · UASG 250005',
+        fav: 'Alfa Logística Hospitalar S.A.',
+        doc: '12.345.678/0001-95',
+        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        secHash: null,
+        epistemic: 'Inferência Estatística (+3,40σ)',
+        pill: 'warn',
+        score: 0.89,
+        cents: 112000000,
+        parquetPath: 'r2://donb-raw/2026/10/pncp_0142.parquet',
+        metricName: 'Z-Score de Preço CATSER',
+        metricVal: '+3,40σ',
+        thresholdVal: '3,00σ',
+        benchmarkVal: 'R$ 740.000,00',
+        officialSummary: 'Contrato firmado em 14/08/2026 entre Coordenação Logística (UASG 250005) e Alfa Logística Hospitalar S.A. (CNPJ 12.345.678/0001-95) no valor global de R$ 1.120.000,00 para armazenagem climatizada de insumos.',
+        statisticalSummary: 'O custo unitário contratado por posição-palete refrigerada (R$ 280,00/mês para 4.000 posições) situa-se 3,40 desvios-padrão acima da mediana nacional do catálogo CATSER 24812 (R$ 185,00/mês).',
+        limitationSummary: 'A divergência estatística não configura irregularidade por si só. Exigências de redundância elétrica hospitalar (-80°C) ou frete aéreo emergencial podem justificar o custo adicional mediante apresentação do Termo de Referência.',
+        chartLabels: ['Lote 1 · Sul', 'Lote 2 · Sudeste', 'Lote 3 · Centro', 'Lote 4 · Norte'],
+        chartValues: [290, 310, 265, 255],
+        chartCompare: [190, 205, 175, 170]
+      },
+      {
+        id: 'DONB-2026-0139',
+        date: '21/10/2026',
+        source: 'CGU',
+        ruleCode: 'R-CGU-HHI-CONCENTRATION',
+        category: 'Concentração & Monopólio',
+        org: 'Fundo Nacional de Desenvolvimento da Educação',
+        fav: 'Construtora Horizonte Ltda.',
+        doc: '33.190.412/0001-08',
+        hash: '8f14e45fceea92a3489e3a6a12745a30689366be1ef5b84c70014a1c1d8995a3',
+        secHash: null,
+        epistemic: 'Inferência Estatística (HHI 3.420)',
+        pill: 'warn',
+        score: 0.84,
+        cents: 48500000,
+        parquetPath: 'r2://donb-raw/2026/10/cgu_fnde_0139.parquet',
+        metricName: 'Índice HHI (0 a 10.000)',
+        metricVal: '3.420,00 (Alta)',
+        thresholdVal: '2.500,00',
+        benchmarkVal: 'R$ 150.000,00',
+        officialSummary: 'Execução de despesas do FNDE no exercício de 2026 concentradas em obras de infraestrutura escolar, onde a Construtora Horizonte Ltda. recebeu R$ 485.000,00.',
+        statisticalSummary: 'O cálculo do Índice Herfindahl-Hirschman (HHI) para o órgão alcançou 3.420,00 pontos, indicando mercado altamente concentrado com participação preponderante do fornecedor.',
+        limitationSummary: 'A concentração pode decorrer de especialização técnica exclusiva em fundações geológicas locais ou de carência de outros prestadores habilitados na região.',
+        chartLabels: ['Favorecido', 'Fornecedor B', 'Fornecedor C', 'Outros'],
+        chartValues: [485, 120, 85, 60],
+        chartCompare: [150, 150, 150, 150]
+      },
+      {
+        id: 'DONB-2026-0135',
+        date: '20/10/2026',
+        source: 'CEAP',
+        ruleCode: 'R-CEAP-OUTLIER-Z3',
+        category: 'Cota Parlamentar',
+        org: 'Câmara dos Deputados · Cota CEAP',
+        fav: 'Vértice Locação de Veículos Ltda.',
+        doc: '41.802.119/0001-77',
+        hash: 'c9f0f895fb985a21074a38779bcf3194a28236f32e60dafe4fcbe009384594c7',
+        secHash: null,
+        epistemic: 'Inferência Estatística (+3,85σ)',
+        pill: 'warn',
+        score: 0.78,
+        cents: 14250000,
+        parquetPath: 'r2://donb-raw/2026/10/camara_ceap_0135.parquet',
+        metricName: 'Z-Score de Cota Parlamentar',
+        metricVal: '+3,85σ',
+        thresholdVal: '3,00σ',
+        benchmarkVal: 'R$ 38.000,00',
+        officialSummary: 'Reembolso requerido na subcota de locação de veículos automotores para o exercício parlamentar no total de R$ 142.500,00 referente a contrato anual fracionado em parcelas mensais.',
+        statisticalSummary: 'O valor da despesa supera em 3,85 desvios-padrão a média de reembolsos da mesma subcota da bancada do estado da federação.',
+        limitationSummary: 'Despesas com locação de veículos blindados ou operações em áreas rurais com alta quilometragem podem apresentar custos compatíveis com as normas da mesa diretora.',
+        chartLabels: ['Gabinete Auditado', 'Média Bancada', 'Mediana Câmara', 'Teto Mensal'],
+        chartValues: [142, 38, 32, 45],
+        chartCompare: [38, 38, 32, 45]
+      },
+      {
+        id: 'DONB-2026-0152',
+        date: '19/10/2026',
+        source: 'CGU',
+        ruleCode: 'R-CROSS-CEIS-SANCTIONED-SUPPLIER',
+        category: 'Fornecedores, Sanções & Monopólio',
+        org: 'Comando da Aeronáutica · Base Aérea',
+        fav: 'Vanguard Serviços Terceirizados Eireli',
+        doc: '07.123.456/0001-88',
+        hash: '5a8d9b1c3e4f7a2d8b9c0e1f3a5b7c9d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b',
+        secHash: '4e6f8a0b5a8d9b1c3e4f7a2d8b9c0e1f3a5b7c9d0e2f4a6b8c0d2e4f6a8b0c2d',
+        epistemic: 'Divergência entre Registros (CEIS)',
+        pill: 'warn',
+        score: 0.92,
+        cents: 38000000,
+        parquetPath: 'r2://donb-raw/2026/10/cgu_ceis_0152.parquet',
+        metricName: 'Sanção Vigente CEIS/CNEP',
+        metricVal: '240 dias ativos',
+        thresholdVal: '0 dias',
+        benchmarkVal: 'R$ 0,00',
+        officialSummary: 'Empenho e pagamento de R$ 380.000,00 em 19/10/2026 para a empresa Vanguard Serviços Terceirizados Eireli (CNPJ 07.123.456/0001-88). O cadastro CEIS da CGU registra sanção de suspensão temporal vigente de 15/01/2026 a 15/01/2027.',
+        statisticalSummary: 'Cruzamento multicritério de base CNPJ identificou coexistência entre o registro oficial de sanção restritiva de licitar e a emissão de ordem de pagamento.',
+        limitationSummary: 'A existência de registro no CEIS/CNEP não comprova irregularidade automática, podendo haver decisão liminar suspensiva da sanção ou abrangência sancionatória restrita a outro ente federativo.',
+        chartLabels: ['Contratação Vigente', 'Período Sancionado', 'Executado', 'Bloqueio'],
+        chartValues: [380, 240, 380, 0],
+        chartCompare: [0, 0, 0, 0]
+      },
+      {
+        id: 'DONB-2026-0150',
+        date: '18/10/2026',
+        source: 'CGU',
+        ruleCode: 'R-CROSS-AMENDMENT-EXECUTION-GAP',
+        category: 'Emendas & Orçamento',
+        org: 'Ministério das Cidades · Emenda nº 38420008',
+        fav: 'Município Conveniado do Interior',
+        doc: '18.420.912/0001-33',
+        hash: '6d2e4f8a0b5a8d9b1c3e4f7a2d8b9c0e1f3a5b7c9d0e2f4a6b8c0d2e4f6a8b0c',
+        secHash: '7a2d8b9c0e1f3a5b7c9d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b5a8d9b1c3e4f',
+        epistemic: 'Divergência entre Registros (Emenda)',
+        pill: 'warn',
+        score: 0.76,
+        cents: 52000000,
+        parquetPath: 'r2://donb-raw/2026/10/cgu_emendas_0150.parquet',
+        metricName: 'Divergência Empenho vs Liquidação',
+        metricVal: 'R$ 410.000,00',
+        thresholdVal: 'R$ 50.000,00',
+        benchmarkVal: 'R$ 110.000,00',
+        officialSummary: 'Emenda parlamentar individual com dotação total de R$ 520.000,00 apresentando R$ 520.000,00 empenhados mas apenas R$ 110.000,00 liquidados até o fim do exercício.',
+        statisticalSummary: 'Divergência contábil de R$ 410.000,00 (78,8% do valor) sem boletins de medição correspondentes nos prazos de cronograma físico-financeiro informados no portal.',
+        limitationSummary: 'Atrasos burocráticos no envio de documentação técnica ou pendências de certidões ambientais municipais comumente postergam a liquidação formal de convênios sem caracterizar desvio.',
+        chartLabels: ['Valor Empenhado', 'Valor Liquidado', 'Divergência', 'Média Convênio'],
+        chartValues: [520, 110, 410, 350],
+        chartCompare: [520, 520, 0, 350]
+      },
+      {
+        id: 'DONB-2026-0145',
+        date: '17/10/2026',
+        source: 'CGU',
+        ruleCode: 'R-STAT-BENFORD-DEVIATION',
+        category: 'Sobrecusto & Estatística',
+        org: 'Superintendência Regional · INCRA',
+        fav: 'Lote Consolidado de Suprimento de Fundos',
+        doc: '00.375.972/0001-60',
+        hash: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Benford MAD)',
+        pill: 'warn',
+        score: 0.79,
+        cents: 21500000,
+        parquetPath: 'r2://donb-raw/2026/10/cgu_suprimentos_0145.parquet',
+        metricName: 'Desvio Benford (MAD Primeiro Dígito)',
+        metricVal: 'MAD = 0,02420',
+        thresholdVal: '0,01500',
+        benchmarkVal: 'MAD = 0,00810',
+        officialSummary: 'Lote com 182 pagamentos por suprimento de fundos somando R$ 215.000,00 no exercício de 2026.',
+        statisticalSummary: 'A distribuição do primeiro dígito apresenta Desvio Médio Absoluto (MAD) de 0,02420 e Qui-Quadrado de 34,18, classificado como Não Conforme com a Lei de Benford.',
+        limitationSummary: 'Preços tabelados por decretos locais ou compras repetitivas de combustíveis podem alterar naturalmente a distribuição de primeiros dígitos sem implicar irregularidade contábil.',
+        chartLabels: ['Dígito 1', 'Dígito 2', 'Dígito 3', 'Dígitos 4-9'],
+        chartValues: [18, 42, 38, 84],
+        chartCompare: [55, 32, 23, 72]
+      },
+      {
+        id: 'DONB-2026-0146',
+        date: '16/10/2026',
+        source: 'PNCP',
+        ruleCode: 'R-SPLIT-EXPENSE-THRESHOLD',
+        category: 'Sobrecusto & Estatística',
+        org: 'Instituto Chico Mendes (ICMBio)',
+        fav: 'TecnoSoluções de Informática Ltda.',
+        doc: '24.512.890/0001-44',
+        hash: '3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Fracionamento)',
+        pill: 'warn',
+        score: 0.82,
+        cents: 16800000,
+        parquetPath: 'r2://donb-raw/2026/10/pncp_dispensas_0146.parquet',
+        metricName: 'Acúmulo em Janela Móvel 90d',
+        metricVal: 'R$ 168.000,00',
+        thresholdVal: 'R$ 59.906,02',
+        benchmarkVal: 'R$ 59.906,02',
+        officialSummary: '4 dispensas de licitação contratadas com o mesmo fornecedor em um intervalo de 72 dias somando R$ 168.000,00 para suporte e equipamentos de TI.',
+        statisticalSummary: 'Cada dispensa individual (R$ 42.000,00) respeitou o limite legal do art. 75 da Lei nº 14.133/2021, mas o somatório acumulado na janela de 90 dias superou o teto de dispensa.',
+        limitationSummary: 'Demandas supervenientes e imprevisíveis em unidades administrativas geograficamente dispersas podem justificar contratações sucessivas sem caracterizar fracionamento voluntário.',
+        chartLabels: ['Dispensa 1', 'Dispensa 2', 'Dispensa 3', 'Dispensa 4'],
+        chartValues: [42, 42, 42, 42],
+        chartCompare: [15, 15, 15, 15]
+      },
+      {
+        id: 'DONB-2026-0147',
+        date: '15/10/2026',
+        source: 'PNCP',
+        ruleCode: 'R-SHARED-CNPJ-ROOT',
+        category: 'Rede Societária',
+        org: 'Universidade Federal Fluminense (UFF)',
+        fav: 'Grupo Comercial Ômega (Matriz e Filiais)',
+        doc: '11.222.333/0001-99',
+        hash: '5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Radical CNPJ)',
+        pill: 'warn',
+        score: 0.75,
+        cents: 29000000,
+        parquetPath: 'r2://donb-raw/2026/10/pncp_filiais_0147.parquet',
+        metricName: 'Filiais com Mesma Raiz 8 Dígitos',
+        metricVal: '4 estabelecimentos',
+        thresholdVal: '2 estabelecimentos',
+        benchmarkVal: 'R$ 100.000,00',
+        officialSummary: 'Contratações simultâneas para manutenção predial em diferentes campi da universidade com 4 CNPJs distintos pertencentes à mesma raiz societária (11.222.333/xxxx-xx) somando R$ 290.000,00.',
+        statisticalSummary: 'Detecção de vínculo corporativo por raiz de CNPJ compartilhada em múltiplos lotes de fornecimento para a mesma unidade gestora.',
+        limitationSummary: 'Filiais de uma mesma pessoa jurídica possuem autorização legal para operar com CNPJs derivados e participar de licitações distintas em objetos segregados.',
+        chartLabels: ['Matriz /0001', 'Filial /0002', 'Filial /0003', 'Filial /0004'],
+        chartValues: [95, 75, 60, 60],
+        chartCompare: [25, 25, 25, 25]
+      },
+      {
+        id: 'DONB-2026-0140',
+        date: '14/10/2026',
+        source: 'PNCP',
+        ruleCode: 'R-PROCUREMENT-MONOPOLISTIC-SUPPLIER',
+        category: 'Concentração & Monopólio',
+        org: 'Empresa Brasileira de Serviços Hospitalares',
+        fav: 'MedDiagnóstica Equipamentos Médicos S.A.',
+        doc: '45.678.901/0001-22',
+        hash: '7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Monopólio 87,5%)',
+        pill: 'warn',
+        score: 0.86,
+        cents: 64000000,
+        parquetPath: 'r2://donb-raw/2026/10/pncp_ebserh_0140.parquet',
+        metricName: 'Participação na Categoria CATMAT',
+        metricVal: '87,5%',
+        thresholdVal: '80,0%',
+        benchmarkVal: 'R$ 150.000,00',
+        officialSummary: 'Contratações no valor de R$ 640.000,00 para fornecimento de reagentes laboratoriais na rede hospitalar federal.',
+        statisticalSummary: 'Um único fornecedor concentrou 87,5% da totalidade de gastos da categoria no exercício, superando o limiar de dominância monopolística.',
+        limitationSummary: 'Equipamentos fechados que exigem insumos do fabricante original (padronização tecnológica) demandam fornecimento exclusivo por proteção patentária legítima.',
+        chartLabels: ['MedDiagnóstica (87,5%)', 'Concorrente A', 'Concorrente B', 'Outros'],
+        chartValues: [640, 45, 30, 16],
+        chartCompare: [180, 180, 180, 180]
+      },
+      {
+        id: 'DONB-2026-0149',
+        date: '13/10/2026',
+        source: 'CEAP',
+        ruleCode: 'R-DUPLICATE-EXPENSE-DOCUMENT',
+        category: 'Sobreposição & Duplicidade',
+        org: 'Câmara dos Deputados · Quota Parlamentar',
+        fav: 'Hotel Metrópole Brasília Ltda.',
+        doc: '02.890.123/0001-55',
+        hash: '9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d',
+        secHash: '0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e',
+        epistemic: 'Divergência entre Registros (Nota Duplicada)',
+        pill: 'warn',
+        score: 0.88,
+        cents: 845000,
+        parquetPath: 'r2://donb-raw/2026/10/camara_duplicatas_0149.parquet',
+        metricName: 'Ocorrências da Mesma Nota Fiscal',
+        metricVal: '2 reembolsos',
+        thresholdVal: '1 reembolso',
+        benchmarkVal: 'R$ 4.225,00',
+        officialSummary: 'Nota Fiscal Eletrônica nº 9842 emitida pelo fornecedor Hotel Metrópole Brasília Ltda. reembolsada duas vezes nos lotes de setembro e outubro no montante total de R$ 8.450,00.',
+        statisticalSummary: 'Detecção determinística de colisão exata da tupla (CNPJ, número de documento fiscal) registrada em dois pedidos de ressarcimento distintos.',
+        limitationSummary: 'Séries fiscais distintas com mesma numeração impressa ou estornos contábeis processados em competências seguintes podem justificar o registro duplicado temporariamente.',
+        chartLabels: ['Reembolso Setembro', 'Reembolso Outubro', 'Mediana Hotel', 'Teto Diária'],
+        chartValues: [4.225, 4.225, 1.200, 2.500],
+        chartCompare: [4.225, 0, 1.200, 2.500]
+      },
+      {
+        id: 'DONB-2026-0148',
+        date: '12/10/2026',
+        source: 'CEAP',
+        ruleCode: 'R-TEMPORAL-GEOGRAPHIC-OVERLAP',
+        category: 'Sobreposição & Duplicidade',
+        org: 'Câmara dos Deputados · Atividade Parlamentar',
+        fav: 'Auto Posto Planalto & Restaurante São Paulo',
+        doc: '04.321.987/0001-11',
+        hash: '1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f',
+        secHash: '2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a',
+        epistemic: 'Anomalia Estatística (Concomitância Geográfica)',
+        pill: 'warn',
+        score: 0.85,
+        cents: 482000,
+        parquetPath: 'r2://donb-raw/2026/10/camara_overlap_0148.parquet',
+        metricName: 'UFs Concomitantes na Mesma Data',
+        metricVal: '2 UFs (DF e SP)',
+        thresholdVal: '1 UF',
+        benchmarkVal: 'R$ 1.200,00',
+        officialSummary: 'Despesas de abastecimento de combustível em Brasília/DF e refeições presenciais em São Paulo/SP registradas para o mesmo mandatário em 12/10/2026 somando R$ 4.820,00.',
+        statisticalSummary: 'Identificação de gastos presenciais simultâneos emitidos no mesmo dia civil em unidades da federação não contíguas sem comprovação de bilhete aéreo correspondente.',
+        limitationSummary: 'Despesas efetuadas legitimamente por assessores parlamentares devidamente credenciados na base eleitoral são legalmente faturadas em nome do titular da cota.',
+        chartLabels: ['Abastecimento DF', 'Alimentação SP', 'Média Diária', 'Limite Refeição'],
+        chartValues: [2.500, 2.320, 800, 1.200],
+        chartCompare: [1.200, 1.200, 800, 1.200]
+      },
+      {
+        id: 'DONB-2026-0151',
+        date: '11/10/2026',
+        source: 'CEAP',
+        ruleCode: 'R-TEMPORAL-WEEKEND-HOLIDAY',
+        category: 'Temporal, Feriados & Recesso',
+        org: 'Câmara dos Deputados · Cota de Atividade',
+        fav: 'Posto Rodoviário Lago Sul Ltda.',
+        doc: '06.789.012/0001-88',
+        hash: '3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Fim de Semana)',
+        pill: 'warn',
+        score: 0.72,
+        cents: 248000,
+        parquetPath: 'r2://donb-raw/2026/10/camara_temporal_0151.parquet',
+        metricName: 'Emissão em Fim de Semana / Feriado',
+        metricVal: 'Domingo (11/10)',
+        thresholdVal: 'Dia útil',
+        benchmarkVal: 'R$ 650,00',
+        officialSummary: 'Abastecimento de veículos oficiais registrado em domingo no montante de R$ 2.480,00 na cota parlamentar.',
+        statisticalSummary: 'Despesa classificada como presencial emitida em data coincidente com final de semana conforme calendário oficial brasileiro.',
+        limitationSummary: 'O exercício do mandato parlamentar em eventos comunitários e visitas a municípios do colégio eleitoral ocorre rotineiramente aos sábados e domingos.',
+        chartLabels: ['Despesa Domingo', 'Média Domingo', 'Média Dia Útil', 'Teto Cota'],
+        chartValues: [2.480, 450, 650, 10.000],
+        chartCompare: [650, 450, 650, 10.000]
+      },
+      {
+        id: 'DONB-2026-0153',
+        date: '10/10/2026',
+        source: 'CEAP',
+        ruleCode: 'R-TEMPORAL-PARLIAMENTARY-RECESS',
+        category: 'Temporal, Feriados & Recesso',
+        org: 'Senado Federal · Gabinete CEAPS',
+        fav: 'Soluções Corporativas Brasília Ltda.',
+        doc: '08.912.340/0001-19',
+        hash: '45c48cce2e2d67a912b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5',
+        secHash: null,
+        epistemic: 'Anomalia Estatística (Recesso Constitucional)',
+        pill: 'warn',
+        score: 0.74,
+        cents: 2850000,
+        parquetPath: 'r2://donb-raw/2026/10/senado_recesso_0153.parquet',
+        metricName: 'Gastos Durante Recesso Constitucional',
+        metricVal: 'R$ 28.500,00',
+        thresholdVal: 'R$ 15.000,00',
+        benchmarkVal: 'R$ 8.000,00',
+        officialSummary: 'Reembolso acumulado de R$ 28.500,00 em consultorias e apoio técnico emitidos durante o recesso parlamentar de julho estabelecido no art. 57 da Constituição Federal.',
+        statisticalSummary: 'Concentração atípica de despesas de consultoria em período em que as sessões legislativas ordinárias encontram-se suspensas.',
+        limitationSummary: 'Trabalhos preparatórios para elaboração de projetos de lei e estudos orçamentários do semestre seguinte podem demandar pareceres técnicos durante o recesso.',
+        chartLabels: ['Semana 1 Recesso', 'Semana 2 Recesso', 'Média Ordinária', 'Média Senado'],
+        chartValues: [14.250, 14.250, 4.000, 5.500],
+        chartCompare: [4.000, 4.000, 4.000, 5.500]
+      },
+      {
+        id: 'DONB-2026-0155',
+        date: '09/10/2026',
+        source: 'TSE',
+        ruleCode: 'R-CROSS-ELECTORAL-DONOR-SUPPLIER',
+        category: 'Eleitoral TSE',
+        org: 'Câmara dos Deputados & TSE Eleições',
+        fav: 'Editora & Gráfica Nacional S.A.',
+        doc: '55.666.777/0001-88',
+        hash: '5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c',
+        secHash: '6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d',
+        epistemic: 'Divergência entre Registros (Doador TSE)',
+        pill: 'warn',
+        score: 0.87,
+        cents: 15000000,
+        parquetPath: 'r2://donb-raw/2026/10/tse_doacoes_0155.parquet',
+        metricName: 'Doação Declarada ao TSE no CNPJ',
+        metricVal: 'R$ 50.000,00',
+        thresholdVal: 'R$ 0,00',
+        benchmarkVal: 'R$ 0,00',
+        officialSummary: 'A Editora & Gráfica Nacional S.A. (CNPJ 55.666.777/0001-88) realizou doação eleitoral de R$ 50.000,00 declarada na prestação de contas do candidato e foi subsequentemente contratada via cota parlamentar por R$ 150.000,00 para divulgação institucional.',
+        statisticalSummary: 'Cruzamento automatizado nominal via CNPJ de 14 dígitos entre doações de campanha registradas na base do TSE e despesas da cota parlamentar CEAP.',
+        limitationSummary: 'Doações eleitorais declaradas à Justiça Eleitoral e fornecimento de serviços gráficos constituem atos lícitos e amparados pela legislação eleitoral, não havendo presunção automática de irregularidade.',
+        chartLabels: ['Despesa Cota', 'Doação TSE', 'Média Gráfica', 'Teto Divulgação'],
+        chartValues: [150, 50, 35, 100],
+        chartCompare: [35, 0, 35, 100]
+      }
     ];
 
     const fmtBRL = (cents) => 'R$ ' + (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1333,26 +1758,79 @@
           items: [
             { label: 'Dado Oficial (SHA-256)', value: 42850, max: 42850, color: '#1d5fbf' },
             { label: 'Inferência Estatística', value: 3120,  max: 42850, color: '#141414' },
-            { label: 'Dossiês em Curadoria',   value: 1800,  max: 42850, color: '#8a8a8a' }
+            { label: 'Dossiês em Curadoria',   value: 1400,  max: 42850, color: '#8a8a8a' }
           ],
-          format: (v) => v === 42850 ? '100,0%' : v === 3120 ? '0,73%' : '0,04%'
+          format: (v) => v === 42850 ? '100,0%' : v === 3120 ? '0,73%' : '0,03%'
         });
       }
     }
 
-    function renderDetailChart() {
+    let currentDossierId = 'DONB-2026-0142';
+
+    function renderDetailScreen(dossierId) {
+      const row = EXPLORER_ROWS.find((r) => r.id === dossierId) || EXPLORER_ROWS[0];
+      currentDossierId = row.id;
+
+      // Update Picker
+      const picker = document.getElementById('dossier-picker');
+      if (picker && picker.value !== row.id) {
+        picker.value = row.id;
+      }
+
+      // Update Title & Meta
+      document.getElementById('screen-title').textContent = `Dossiê de Verificação Técnica · ${row.id}`;
+      document.getElementById('screen-sub').textContent = `${row.ruleCode} · ${row.category} · Prova SHA-256 e Decomposição Epistêmica`;
+      document.getElementById('detail-title-id').textContent = row.id;
+      document.getElementById('detail-rule-tag').textContent = row.ruleCode;
+
+      // Update KPIs
+      document.getElementById('detail-kpi-value').textContent = fmtBRL(row.cents);
+      document.getElementById('detail-kpi-sub').textContent = `${row.source} · ${row.doc}`;
+      document.getElementById('detail-kpi-metric-label').textContent = row.metricName;
+      document.getElementById('detail-kpi-metric-val').textContent = row.metricVal;
+      document.getElementById('detail-kpi-metric-sub').textContent = `Referência: ${row.benchmarkVal}`;
+      document.getElementById('detail-kpi-indicator').textContent = row.metricVal.split(' ')[0] || row.metricVal;
+      document.getElementById('detail-kpi-laya').textContent = `Laya ${fmtScore(row.score)}`;
+      document.getElementById('detail-kpi-threshold').textContent = `Limiar de Triagem: ${row.thresholdVal}`;
+
+      // Update Epistemic Layers
+      document.getElementById('detail-official-id').textContent = `Doc: ${row.doc}`;
+      document.getElementById('detail-official-text').textContent = row.officialSummary;
+      document.getElementById('detail-stat-rule').textContent = `Regra: ${row.ruleCode}`;
+      document.getElementById('detail-stat-text').textContent = row.statisticalSummary;
+      document.getElementById('detail-limit-text').textContent = row.limitationSummary;
+
+      // Update Key-Value Ledger
+      document.getElementById('detail-kv-source').textContent = `${row.source} · ${row.org}`;
+      document.getElementById('detail-kv-date').textContent = row.date;
+      document.getElementById('detail-kv-hash').textContent = row.hash.substring(0, 24) + '...';
+      const secRow = document.getElementById('detail-kv-sec-row');
+      const secHashEl = document.getElementById('detail-kv-sec-hash');
+      if (row.secHash) {
+        secRow.style.display = 'flex';
+        secHashEl.textContent = row.secHash.substring(0, 24) + '...';
+      } else {
+        secRow.style.display = 'flex';
+        secHashEl.textContent = 'N/A (Fonte Primária Única)';
+      }
+      document.getElementById('detail-kv-parquet').textContent = row.parquetPath;
+      document.getElementById('detail-kv-decision').textContent = `REVISAO_HUMANA (${fmtScore(row.score)})`;
+      document.getElementById('detail-kv-amount').textContent = fmtBRL(row.cents);
+
+      // Render columns chart
       const colHost = document.getElementById('detail-columns-chart');
       if (colHost) {
         Charts.columns(colHost, {
-          labels: ['Lote 1 · Sul', 'Lote 2 · Sudeste', 'Lote 3 · Centro', 'Lote 4 · Norte'],
-          values: [290, 310, 265, 255],
-          compare: [190, 205, 175, 170],
+          labels: row.chartLabels || ['Item 1', 'Item 2', 'Item 3', 'Item 4'],
+          values: row.chartValues || [100, 100, 100, 100],
+          compare: row.chartCompare,
           formatY: (v) => `R$ ${v}k`
         });
       }
     }
 
     let activeSource = 'all';
+    let activeCategory = 'all';
     let searchQuery = '';
 
     function renderExplorerTable() {
@@ -1361,20 +1839,22 @@
       const q = searchQuery.trim().toLowerCase();
       const filtered = EXPLORER_ROWS.filter((r) => {
         const matchSource = activeSource === 'all' || r.source === activeSource;
-        const matchQuery = !q || `${r.org} ${r.fav} ${r.doc} ${r.hash}`.toLowerCase().includes(q);
-        return matchSource && matchQuery;
+        const matchCategory = activeCategory === 'all' || r.category === activeCategory;
+        const matchQuery = !q || `${r.id} ${r.ruleCode} ${r.category} ${r.org} ${r.fav} ${r.doc} ${r.hash}`.toLowerCase().includes(q);
+        return matchSource && matchCategory && matchQuery;
       });
 
       tbody.innerHTML = filtered.map((r) => `
-        <tr data-nav-row="detail" style="cursor:pointer">
+        <tr data-nav-row="detail" data-dossier-id="${r.id}" style="cursor:pointer">
           <td>${r.date}</td>
           <td>
             <div class="primary">${r.source} · ${r.org}</div>
           </td>
+          <td><code>${r.ruleCode}</code></td>
           <td>
             <span class="primary">${r.fav}</span> <code>${r.doc}</code>
           </td>
-          <td><code>sha256:${r.hash}</code></td>
+          <td><code>sha256:${r.hash.substring(0, 12)}</code></td>
           <td><span class="pill ${r.pill}">${r.epistemic}</span></td>
           <td class="n">${fmtScore(r.score)}</td>
           <td class="n money">${fmtBRL(r.cents)}</td>
@@ -1387,23 +1867,24 @@
       document.getElementById('explorer-foot-score').textContent = `${fmtScore(avgScore)} méd.`;
       document.getElementById('explorer-foot-total').textContent = fmtBRL(sumCents);
 
-      if (activeSource === 'all' && !q) {
-        console.assert(sumCents === 189042000, 'Soma do explorador deve fechar em R$ 1.890.420,00');
+      if (activeSource === 'all' && activeCategory === 'all' && !q) {
+        console.assert(sumCents === 415475000, 'Soma de todas as 14 regras deve fechar exatamente em R$ 4.154.750,00');
+        console.assert(filtered.length === 14, 'Total de regras auditadas deve ser exatamente 14');
       }
     }
 
     const SCREEN_META = {
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados até 23 out 2026 · 18 sinais em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 14 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
       },
       list: {
-        title: 'Explorador de despesas, contratos e cotas',
+        title: 'Explorador de despesas, contratos e sinais (14 Regras)',
         sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
       },
       detail: {
-        title: 'Dossiê de verificação técnica · DONB-2026-0142',
-        sub: 'Separação estrita entre dado bruto oficial, inferência estatística paramétrica e limitações de escopo.'
+        title: 'Dossiê de verificação técnica',
+        sub: 'Separação estrita entre [DADO OFICIAL], [INFERÊNCIA ESTATÍSTICA] e [HIPÓTESE DE AUDITORIA / LIMITAÇÃO].'
       },
       inbox: {
         title: 'Fila de curadoria e direito de resposta',
@@ -1411,7 +1892,7 @@
       }
     };
 
-    function switchScreen(screenId) {
+    function switchScreen(screenId, optDossierId) {
       const target = SCREEN_META[screenId] ? screenId : 'overview';
       document.querySelectorAll('.screen-view').forEach((sec) => {
         sec.hidden = sec.id !== `screen-${target}`;
@@ -1428,7 +1909,22 @@
 
       if (target === 'overview') renderOverviewCharts();
       if (target === 'list') renderExplorerTable();
-      if (target === 'detail') renderDetailChart();
+      if (target === 'detail') {
+        const idToLoad = optDossierId || currentDossierId;
+        renderDetailScreen(idToLoad);
+      }
+    }
+
+    // Populate Dossier Picker dropdown
+    function initDossierPicker() {
+      const picker = document.getElementById('dossier-picker');
+      if (!picker) return;
+      picker.innerHTML = EXPLORER_ROWS.map((r) => `
+        <option value="${r.id}">${r.id} · ${r.ruleCode} (${r.category})</option>
+      `).join('');
+      picker.addEventListener('change', (e) => {
+        renderDetailScreen(e.target.value);
+      });
     }
 
     // Wire up interactive tabs & navigation
@@ -1436,12 +1932,14 @@
       const navTrigger = e.target.closest('[data-nav]');
       if (navTrigger) {
         e.preventDefault();
-        switchScreen(navTrigger.dataset.nav);
+        const dId = navTrigger.dataset.dossierId;
+        switchScreen(navTrigger.dataset.nav, dId);
         return;
       }
       const rowTrigger = e.target.closest('[data-nav-row]');
       if (rowTrigger) {
-        switchScreen(rowTrigger.dataset.navRow);
+        const dId = rowTrigger.dataset.dossierId;
+        switchScreen(rowTrigger.dataset.navRow, dId);
         return;
       }
       const seriesTab = e.target.closest('.chart-tab[data-series]');
@@ -1456,6 +1954,11 @@
         activeSource = sourceTab.dataset.source;
         renderExplorerTable();
       }
+    });
+
+    document.getElementById('explorer-rule-select')?.addEventListener('change', (e) => {
+      activeCategory = e.target.value;
+      renderExplorerTable();
     });
 
     document.getElementById('btn-mobile-menu')?.addEventListener('click', () => {
@@ -1475,8 +1978,68 @@
       renderExplorerTable();
     });
 
+    document.getElementById('btn-copy-hash')?.addEventListener('click', () => {
+      const row = EXPLORER_ROWS.find((r) => r.id === currentDossierId) || EXPLORER_ROWS[0];
+      navigator.clipboard?.writeText(row.hash);
+      const btn = document.getElementById('btn-copy-hash');
+      if (btn) {
+        const oldText = btn.textContent;
+        btn.textContent = 'Hash Copiado!';
+        setTimeout(() => { btn.textContent = oldText; }, 1500);
+      }
+    });
+
+    document.getElementById('btn-quick-copy-dossier-hash')?.addEventListener('click', () => {
+      const row = EXPLORER_ROWS.find((r) => r.id === currentDossierId) || EXPLORER_ROWS[0];
+      navigator.clipboard?.writeText(row.hash);
+      const btn = document.getElementById('btn-quick-copy-dossier-hash');
+      if (btn) {
+        const oldText = btn.textContent;
+        btn.textContent = 'Copiado!';
+        setTimeout(() => { btn.textContent = oldText; }, 1500);
+      }
+    });
+
+    document.getElementById('btn-download-evidence-bundle')?.addEventListener('click', () => {
+      const row = EXPLORER_ROWS.find((r) => r.id === currentDossierId) || EXPLORER_ROWS[0];
+      const bundle = {
+        dossier_id: row.id,
+        rule_code: row.ruleCode,
+        category: row.category,
+        official_data: {
+          source: row.source,
+          organ: row.org,
+          supplier: row.fav,
+          document_or_masked_cpf: row.doc,
+          primary_sha256: row.hash,
+          secondary_sha256: row.secHash,
+          amount_cents: row.cents
+        },
+        statistical_inference: {
+          metric_name: row.metricName,
+          metric_value: row.metricVal,
+          threshold: row.thresholdVal,
+          benchmark: row.benchmarkVal,
+          system1_laya_score: row.score
+        },
+        audit_hypothesis_and_limits: {
+          statement: row.limitationSummary,
+          non_accusatory_verified: true
+        },
+        generated_at_utc: new Date().toISOString(),
+        bundle_sha256: 'canonical_deterministic_bundle_manifest_sha256'
+      };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bundle_${row.id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
     // Live Full-Stack API Integration (when served via `donb-ingest serve` over HTTP/HTTPS)
-    let liveDossierId = 'DOS-SIG-CEAP-06f566c54dda983';
+    let liveDossierId = 'DONB-2026-0142';
     if (window.location.protocol.startsWith('http')) {
       Promise.all([
         fetch('/api/v1/reconciliation').then((r) => (r.ok ? r.json() : null)),
@@ -1531,12 +2094,15 @@
       }
     });
 
-    // Initial render supports ?screen=overview|list|detail|inbox for automated inspection of every screen
-    const initialScreen = new URLSearchParams(window.location.search).get('screen') || 'overview';
+    // Initial render
+    initDossierPicker();
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialScreen = urlParams.get('screen') || 'overview';
+    const initialDossier = urlParams.get('id') || 'DONB-2026-0142';
     renderOverviewCharts('total');
     renderExplorerTable();
-    renderDetailChart();
-    switchScreen(initialScreen);
+    renderDetailScreen(initialDossier);
+    switchScreen(initialScreen, initialDossier);
   </script>
 </body>
 </html>
