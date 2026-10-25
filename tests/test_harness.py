@@ -21,10 +21,10 @@ class TestLoopEngineeringHarness(unittest.TestCase):
     def test_openspec_traceability_gate_passes_and_resolves_anchors(self) -> None:
         result = verify_openspec_traceability(REPO_ROOT)
         self.assertTrue(result.passed, f"SDD Spec violations: {result.violations}")
-        self.assertEqual(result.metrics["capabilities_checked"], 16)
-        self.assertEqual(result.metrics["sdd_artifacts_verified"], 96)
+        self.assertEqual(result.metrics["capabilities_checked"], 17)
+        self.assertEqual(result.metrics["sdd_artifacts_verified"], 102)
         self.assertGreaterEqual(int(result.metrics["unique_requirements"]), 55)
-        self.assertGreaterEqual(int(result.metrics["verified_test_anchors"]), 76)
+        self.assertGreaterEqual(int(result.metrics["verified_test_anchors"]), 80)
 
     def test_gateguard_boundaries_confirm_frozen_entities_and_eval_files(self) -> None:
         result = verify_gateguard_boundaries(REPO_ROOT)

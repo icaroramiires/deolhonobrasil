@@ -9,10 +9,13 @@ Implementa as exigências das Seções 7.6, 8, 10 e 12.1:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
+import re
+import unicodedata
 
 from deolhonobrasil.pipeline.privacy import (
     compute_sha256_text,
@@ -523,9 +526,121 @@ def normalize_cnae_code(raw: str) -> str:
     return digits
 
 
+def normalize_postal_code(raw: str) -> str:
+    """Normaliza CEP brasileiro para 8 dígitos numéricos estritos (ex: '70000-000' -> '70000000') (SPEC-0017)."""
+    digits = "".join(ch for ch in str(raw or "") if ch.isdigit())
+    if len(digits) == 8:
+        return digits
+    if not digits or digits == "00000000":
+        return "00000000"
+    if 1 <= len(digits) < 8:
+        return digits.zfill(8)
+    raise ValueError(f"CEP deve conter exatamente 8 dígitos numéricos: '{raw}'")
+
+
+def normalize_street_address(raw: str) -> str:
+    """Normaliza logradouro removendo acentuação, padronizando prefixos e pontuação (SPEC-0017 / NFR-020)."""
+    text = unicodedata.normalize("NFKD", str(raw or "")).encode("ASCII", "ignore").decode("ASCII").upper()
+    text = re.sub(r"\b(N|NO|NUM|NUMERO)\b\.?", " ", text)
+    text = re.sub(r"[^\w\s]", " ", text)
+    words = text.split()
+    if not words:
+        return "N/A"
+
+    prefix_map = {
+        "R": "RUA",
+        "RUA": "RUA",
+        "AV": "AVENIDA",
+        "AVENIDA": "AVENIDA",
+        "AL": "ALAMEDA",
+        "ALAMEDA": "ALAMEDA",
+        "ROD": "RODOVIA",
+        "RODOVIA": "RODOVIA",
+        "PC": "PRACA",
+        "PCA": "PRACA",
+        "PRACA": "PRACA",
+        "TV": "TRAVESSA",
+        "TRAVESSA": "TRAVESSA",
+        "QD": "QUADRA",
+        "QDA": "QUADRA",
+        "QUADRA": "QUADRA",
+        "LT": "LOTE",
+        "LTE": "LOTE",
+        "LOTE": "LOTE",
+        "ST": "SETOR",
+        "STR": "SETOR",
+        "SETOR": "SETOR",
+    }
+    if words[0] in prefix_map:
+        words[0] = prefix_map[words[0]]
+    return " ".join(words)
+
+
+def normalize_address_number(raw: str) -> str:
+    """Normaliza número predial (ex: 'S/N', 'SN', '0', 's/n' -> 'SN'; '123' -> '123') (SPEC-0017)."""
+    text = unicodedata.normalize("NFKD", str(raw or "")).encode("ASCII", "ignore").decode("ASCII").upper().strip()
+    clean = re.sub(r"[^\w]", "", text)
+    if not clean or clean in ("SN", "0", "SEMNUMERO"):
+        return "SN"
+    return clean
+
+
+def extract_autonomous_unit(raw_complement: str | None) -> str | None:
+    """Extrai identificador de unidade autônoma (sala, loja, conjunto, andar, box, apto, galpão) (SPEC-0017)."""
+    if not raw_complement:
+        return None
+    text = unicodedata.normalize("NFKD", str(raw_complement)).encode("ASCII", "ignore").decode("ASCII").upper().strip()
+    if not text or text in ("N/A", "NA", "NENHUM", "NULL", "NONE", "SN", "SEM COMPLEMENTO"):
+        return None
+    text = re.sub(r"[^\w\s]", " ", text)
+    cleaned = " ".join(text.split())
+    if not cleaned or cleaned in ("N A", "NA", "NENHUM", "NULL", "NONE", "SN", "SEM COMPLEMENTO"):
+        return None
+    match = re.search(
+        r"\b(SALA|SL|LOJA|LJ|CONJUNTO|CJ|ANDAR|PAVIMENTO|BOX|APARTAMENTO|APTO|BLOCO|GALPAO)\s*([A-Z0-9\-]+)",
+        cleaned,
+    )
+    if match:
+        unit_type = match.group(1)
+        unit_num = match.group(2)
+        type_norm = {
+            "SALA": "SALA",
+            "SL": "SALA",
+            "LOJA": "LOJA",
+            "LJ": "LOJA",
+            "CONJUNTO": "CJ",
+            "CJ": "CJ",
+            "ANDAR": "ANDAR",
+            "PAVIMENTO": "ANDAR",
+            "BOX": "BOX",
+            "APARTAMENTO": "APTO",
+            "APTO": "APTO",
+            "BLOCO": "BLOCO",
+            "GALPAO": "GALPAO",
+        }.get(unit_type, unit_type)
+        return f"{type_norm} {unit_num}"
+    return cleaned
+
+
+def compute_normalized_address_key(
+    postal_code: str,
+    street_address: str,
+    address_number: str,
+    complement: str | None = None,
+) -> str:
+    """Calcula hash determinístico SHA-256 da chave canônica de endereço físico (SPEC-0017 / DATA-019)."""
+    norm_cep = normalize_postal_code(postal_code)
+    norm_street = normalize_street_address(street_address)
+    norm_number = normalize_address_number(address_number)
+    unit = extract_autonomous_unit(complement)
+    unit_str = f"|{unit}" if unit else ""
+    raw_key = f"{norm_cep}|{norm_street}|{norm_number}{unit_str}"
+    return compute_sha256_text(raw_key)
+
+
 @dataclass(frozen=True, slots=True)
 class CuratedCompanyRegistrationRecord:
-    """Cadastro formal de Pessoa Jurídica na Receita Federal (RFB CNPJ) (SPEC-0014 / SPEC-0015)."""
+    """Cadastro formal de Pessoa Jurídica na Receita Federal (RFB CNPJ) (SPEC-0014 / SPEC-0015 / SPEC-0017)."""
 
     cnpj_normalized: str
     corporate_root_cnpj: str
@@ -537,12 +652,39 @@ class CuratedCompanyRegistrationRecord:
     registration_status: str
     provenance: ProvenanceMetadata
     secondary_cnae_codes: tuple[str, ...] = field(default_factory=tuple)
+    postal_code: str = "00000000"
+    street_address: str = "N/A"
+    address_number: str = "S/N"
+    address_complement: str | None = None
+    district: str = "CENTRO"
+    city: str = "BRASILIA"
+    state_uf: str = "DF"
     natural_key: str = field(default="")
 
     @property
     def main_cnae_code(self) -> str:
         """Alias padronizado para cnae_main_code (SPEC-0015)."""
         return self.cnae_main_code
+
+    @property
+    def normalized_address_key(self) -> str:
+        """Chave determinística de endereço físico com unidade autônoma se houver (SPEC-0017)."""
+        return compute_normalized_address_key(
+            self.postal_code,
+            self.street_address,
+            self.address_number,
+            self.address_complement,
+        )
+
+    @property
+    def base_building_address_key(self) -> str:
+        """Chave determinística da edificação física sem unidade autônoma (SPEC-0017)."""
+        return compute_normalized_address_key(
+            self.postal_code,
+            self.street_address,
+            self.address_number,
+            None,
+        )
 
     def __post_init__(self) -> None:
         digits = "".join(ch for ch in str(self.cnpj_normalized) if ch.isdigit())
@@ -576,6 +718,15 @@ class CuratedCompanyRegistrationRecord:
         if capital < Decimal("0.00"):
             raise ValueError("Capital social não pode ser negativo.")
 
+        # Normalização de endereço físico (SPEC-0017)
+        clean_cep = normalize_postal_code(self.postal_code) if self.postal_code else "00000000"
+        clean_street = sanitize_untrusted_text(self.street_address, 200) or "N/A"
+        clean_number = sanitize_untrusted_text(self.address_number, 50) or "S/N"
+        clean_comp = sanitize_untrusted_text(self.address_complement, 100) if self.address_complement else None
+        clean_district = sanitize_untrusted_text(self.district, 100) or "CENTRO"
+        clean_city = sanitize_untrusted_text(self.city, 100) or "BRASILIA"
+        clean_uf = (sanitize_untrusted_text(self.state_uf, 2) or "DF").upper()
+
         object.__setattr__(self, "cnpj_normalized", digits)
         object.__setattr__(self, "corporate_root_cnpj", clean_root)
         object.__setattr__(self, "legal_name", clean_legal)
@@ -584,6 +735,13 @@ class CuratedCompanyRegistrationRecord:
         object.__setattr__(self, "cnae_main_code", clean_cnae)
         object.__setattr__(self, "registration_status", clean_status)
         object.__setattr__(self, "secondary_cnae_codes", tuple(clean_secondaries))
+        object.__setattr__(self, "postal_code", clean_cep)
+        object.__setattr__(self, "street_address", clean_street)
+        object.__setattr__(self, "address_number", clean_number)
+        object.__setattr__(self, "address_complement", clean_comp)
+        object.__setattr__(self, "district", clean_district)
+        object.__setattr__(self, "city", clean_city)
+        object.__setattr__(self, "state_uf", clean_uf)
 
         if not self.natural_key:
             secondaries_str = "|".join(clean_secondaries)
@@ -604,6 +762,13 @@ class CuratedCompanyRegistrationRecord:
         cnae_main_code: str = "0000000",
         registration_status: str = "ATIVA",
         secondary_cnae_codes: Sequence[str] = (),
+        postal_code: str = "00000000",
+        street_address: str = "N/A",
+        address_number: str = "S/N",
+        address_complement: str | None = None,
+        district: str = "CENTRO",
+        city: str = "BRASILIA",
+        state_uf: str = "DF",
     ) -> CuratedCompanyRegistrationRecord:
         doc_norm, doc_type = normalize_and_protect_document(cnpj_raw)
         if doc_type != "CNPJ":
@@ -620,6 +785,13 @@ class CuratedCompanyRegistrationRecord:
             registration_status=registration_status,
             provenance=provenance,
             secondary_cnae_codes=tuple(secondary_cnae_codes),
+            postal_code=postal_code,
+            street_address=street_address,
+            address_number=address_number,
+            address_complement=address_complement,
+            district=district,
+            city=city,
+            state_uf=state_uf,
         )
 
 

@@ -1939,3 +1939,177 @@ def evaluate_public_agent_supplier_crossmatch_rule(
     return signals
 
 
+def evaluate_shared_company_address_rule(
+    companies: Sequence[CuratedCompanyRegistrationRecord],
+    contracts: Sequence[CuratedPublicContract] = (),
+    expenses: Sequence[CuratedPublicExpense] = (),
+) -> list[AuditSignal]:
+    """Identifica múltiplos fornecedores contratados pelo mesmo órgão com mesmo endereço físico cadastral (SPEC-0017 / FR-037).
+
+    Código da Regra: R-CORP-SHARED-ADDRESS
+    Classificação Epistêmica: CROSS_SOURCE_DIVERGENCE
+    """
+    if not companies or (not contracts and not expenses):
+        return []
+
+    # 1. Indexar empresas cadastradas que possuem endereço válido e não genérico
+    companies_by_cnpj: dict[str, CuratedCompanyRegistrationRecord] = {}
+    for comp in companies:
+        if not comp.cnpj_normalized or comp.postal_code == "00000000" or comp.street_address == "N/A":
+            continue
+        companies_by_cnpj[comp.cnpj_normalized] = comp
+
+    if len(companies_by_cnpj) < 2:
+        return []
+
+    def _clean_organ(code: str) -> str:
+        return code.strip().replace(".", "").replace("/", "").replace("-", "")
+
+    # 2. Agrupar contratações e despesas por órgão contratante e fornecedor CNPJ
+    organs_data: dict[str, dict[str, object]] = defaultdict(
+        lambda: {
+            "organ_name": "",
+            "contracts_by_supplier": defaultdict(list),
+            "expenses_by_supplier": defaultdict(list),
+        }
+    )
+
+    for contract in contracts:
+        if contract.current_amount <= Decimal("0.00"):
+            continue
+        sup_doc = contract.supplier_doc_normalized.strip()
+        if sup_doc not in companies_by_cnpj:
+            continue
+        organ_clean = _clean_organ(contract.organ_cnpj)
+        data = organs_data[organ_clean]
+        if not data["organ_name"] and contract.organ_name:
+            data["organ_name"] = contract.organ_name
+        data["contracts_by_supplier"][sup_doc].append(contract)
+
+    for expense in expenses:
+        if expense.net_amount <= Decimal("0.00"):
+            continue
+        sup_doc = expense.supplier_doc_normalized.strip()
+        if sup_doc not in companies_by_cnpj:
+            continue
+        organ_clean = _clean_organ(expense.organ_code)
+        data = organs_data[organ_clean]
+        if not data["organ_name"] and expense.organ_name:
+            data["organ_name"] = expense.organ_name
+        data["expenses_by_supplier"][sup_doc].append(expense)
+
+    signals: list[AuditSignal] = []
+    seen_signals: set[str] = set()
+
+    # 3. Para cada órgão, cruzar os fornecedores contratados por endereço físico
+    for organ_clean, data in organs_data.items():
+        contracts_by_sup: dict[str, list[CuratedPublicContract]] = data["contracts_by_supplier"]
+        expenses_by_sup: dict[str, list[CuratedPublicExpense]] = data["expenses_by_supplier"]
+        organ_suppliers = set(contracts_by_sup.keys()) | set(expenses_by_sup.keys())
+        if len(organ_suppliers) < 2:
+            continue
+
+        clean_organ_name = sanitize_untrusted_text(str(data["organ_name"] or organ_clean), 150)
+
+        # Agrupar fornecedores deste órgão por endereço físico normalizado (incluindo unidade autônoma)
+        suppliers_by_address: dict[str, list[CuratedCompanyRegistrationRecord]] = defaultdict(list)
+        for c_doc in sorted(organ_suppliers):
+            comp = companies_by_cnpj[c_doc]
+            suppliers_by_address[comp.normalized_address_key].append(comp)
+
+        for addr_key, colliding_comps in suppliers_by_address.items():
+            if len(colliding_comps) < 2:
+                continue
+
+            # Verificar se os CNPJs são distintos
+            distinct_cnpjs = sorted({c.cnpj_normalized for c in colliding_comps})
+            if len(distinct_cnpjs) < 2:
+                continue
+
+            # Montante total contratado/pago pelo órgão aos fornecedores que compartilham o endereço
+            relevant_contracts: list[CuratedPublicContract] = []
+            relevant_expenses: list[CuratedPublicExpense] = []
+            for c_doc in distinct_cnpjs:
+                relevant_contracts.extend(contracts_by_sup.get(c_doc, []))
+                relevant_expenses.extend(expenses_by_sup.get(c_doc, []))
+
+            total_amount = (
+                sum(c.current_amount for c in relevant_contracts)
+                + sum(e.net_amount for e in relevant_expenses)
+            )
+
+            # Deduplicação de sinais
+            cnpjs_joined = ":".join(distinct_cnpjs)
+            signal_key = f"{organ_clean}:{addr_key}:{cnpjs_joined}"
+            if signal_key in seen_signals:
+                continue
+            seen_signals.add(signal_key)
+
+            sample_comp = colliding_comps[0]
+            address_parts = [
+                sample_comp.street_address,
+                f"nº {sample_comp.address_number}",
+            ]
+            if sample_comp.address_complement:
+                address_parts.append(sample_comp.address_complement)
+            address_parts.extend([
+                f"CEP {sample_comp.postal_code}",
+                f"{sample_comp.city}/{sample_comp.state_uf}",
+            ])
+            address_summary = ", ".join(address_parts)
+
+            company_names_str = " e ".join(
+                f"{sanitize_untrusted_text(c.legal_name, 120)} ({c.cnpj_normalized})"
+                for c in colliding_comps
+            )
+
+            provenance_hashes = tuple(
+                sorted(
+                    {c.provenance.raw_batch_sha256 for c in colliding_comps}
+                    | {c.provenance.raw_batch_sha256 for c in relevant_contracts}
+                    | {e.provenance.raw_batch_sha256 for e in relevant_expenses}
+                )
+            )
+
+            title = f"Fornecedores com mesmo endereço físico cadastral contratados pelo mesmo órgão ({clean_organ_name})"
+            fact_summary = (
+                f"Os fornecedores {company_names_str} possuem o mesmo endereço físico cadastral perante a "
+                f"Receita Federal ({address_summary}) e foram contratados ou receberam pagamentos do mesmo órgão "
+                f"{clean_organ_name} ({organ_clean}) totalizando R$ {total_amount:.2f}."
+            )
+            stat_summary = (
+                f"Cruzamento determinístico espacial e cadastral entre a base de pessoas jurídicas (RFB CNPJ) "
+                f"e contratações/despesas públicas identificando convergência exata de logradouro, número predial e CEP "
+                f"({address_summary}) entre {len(distinct_cnpjs)} pessoas jurídicas distintas contratadas pelo órgão."
+            )
+            scope_limit = (
+                "Centros empresariais, incubadoras de base tecnológica, condomínios corporativos e espaços de "
+                "coworking podem abrigar licitamente múltiplos prestadores de serviço distintos no mesmo endereço físico. "
+                "A convergência cadastral não comprova conluio ou irregularidade por si só, exigindo procedimento preliminar "
+                "formal de vistoria in loco e análise fática das propostas antes de qualquer imputação sancionatória "
+                "(art. 14, § 1º da Lei nº 14.133/2021 e Acórdãos TCU nº 1.793/2011 e 1.250/2016-Plenário)."
+            )
+
+            sig_id = f"SIG-CORP-ADDR-{compute_sha256_text(signal_key)[:16]}"
+            signals.append(
+                AuditSignal(
+                    signal_id=sig_id,
+                    rule_code="R-CORP-SHARED-ADDRESS",
+                    title=title,
+                    official_fact_summary=fact_summary,
+                    statistical_inference_summary=stat_summary,
+                    scope_limitation_summary=scope_limit,
+                    epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                    metric_name="shared_address_suppliers_count",
+                    metric_value=Decimal(str(len(distinct_cnpjs))),
+                    threshold_value=Decimal("1.00"),
+                    audited_amount=total_amount,
+                    provenance_hashes=provenance_hashes,
+                    requires_human_review=True,
+                )
+            )
+
+    return signals
+
+
+
