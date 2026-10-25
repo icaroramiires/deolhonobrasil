@@ -635,10 +635,10 @@
             Visão geral
           </button>
           <button type="button" class="nav-item" data-nav="list">
-            Explorador <span class="nav-count">14 Regras</span>
+            Explorador <span class="nav-count">16 Regras</span>
           </button>
           <button type="button" class="nav-item" data-nav="detail">
-            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">14</span>
+            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">16</span>
           </button>
           <button type="button" class="nav-item" data-nav="inbox">
             Direito de resposta <span class="nav-count">4</span>
@@ -657,7 +657,7 @@
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
-          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 14 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
+          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 16 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
         </div>
         <div class="head-actions">
           <div class="seg" role="tablist" aria-label="Exercício fiscal">
@@ -690,8 +690,8 @@
           <div class="kpi">
             <div class="kpi-label">Regras de auditoria ativas</div>
             <div class="kpi-row">
-              <span class="kpi-value">14 regras</span>
-              <span class="delta down">14 dossiês</span>
+              <span class="kpi-value">16 regras</span>
+              <span class="delta down">16 dossiês</span>
             </div>
             <div class="kpi-sub">Triagem Laya ONNX (System 1)</div>
           </div>
@@ -801,12 +801,12 @@
                 <span class="kv-val">42.850 docs · 100,0%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (14 Regras)</span>
+                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (16 Regras)</span>
                 <span class="kv-val">312 sinais · 0,73%</span>
               </div>
               <div class="kv-row">
                 <span class="kv-label">3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO]</span>
-                <span class="kv-val">14 dossiês em curadoria · 0,03%</span>
+                <span class="kv-val">16 dossiês em curadoria · 0,03%</span>
               </div>
             </div>
 
@@ -819,10 +819,10 @@
           <article class="card card-flush">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Sinais matemáticos prioritários (14 Regras)</h2>
+                <h2 class="card-title">Sinais matemáticos prioritários (16 Regras)</h2>
                 <div class="card-meta">Triagem Laya ONNX + regras determinísticas</div>
               </div>
-              <button type="button" class="btn" data-nav="list">Ver todas as 14</button>
+              <button type="button" class="btn" data-nav="list">Ver todas as 16</button>
             </div>
 
             <div class="table-wrap">
@@ -891,16 +891,17 @@
         <article class="card card-flush">
           <div class="toolbar">
             <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
-              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (14)</button>
+              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (16)</button>
               <button type="button" role="tab" aria-selected="false" data-source="PNCP">PNCP Contratos</button>
               <button type="button" role="tab" aria-selected="false" data-source="CGU">CGU Transparência</button>
               <button type="button" role="tab" aria-selected="false" data-source="CEAP">Câmara / Senado</button>
               <button type="button" role="tab" aria-selected="false" data-source="TSE">TSE Eleições</button>
+              <button type="button" role="tab" aria-selected="false" data-source="RFB">Receita Federal (QSA)</button>
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <select class="select" id="explorer-rule-select" aria-label="Filtrar por categoria de regra">
-                <option value="all">Todas as Categorias (14 Regras)</option>
+                <option value="all">Todas as Categorias (16 Regras)</option>
                 <option value="Sobrecusto & Catálogo">Sobrecusto & Catálogo (Z-Score)</option>
                 <option value="Concentração & Monopólio">Concentração & Monopólio (HHI/80%)</option>
                 <option value="Cota Parlamentar">Cota Parlamentar (CEAP Outlier)</option>
@@ -911,6 +912,7 @@
                 <option value="Sobreposição & Duplicidade">Sobreposição & Duplicidade (Notas/UFs)</option>
                 <option value="Temporal, Feriados & Recesso">Temporal (Fim de Semana/Recesso)</option>
                 <option value="Eleitoral TSE">Eleitoral TSE (Doação e Fornecimento)</option>
+                <option value="Quadro Societário & QSA">Quadro Societário & QSA (Sócios & Doações)</option>
               </select>
 
               <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido, regra ou CNPJ" aria-label="Buscar favorecido, regra ou CNPJ">
@@ -1732,6 +1734,60 @@
         chartLabels: ['Despesa Cota', 'Doação TSE', 'Média Gráfica', 'Teto Divulgação'],
         chartValues: [150, 50, 35, 100],
         chartCompare: [35, 0, 35, 100]
+      },
+      {
+        id: 'DONB-2026-0156',
+        date: '08/10/2026',
+        source: 'RFB',
+        ruleCode: 'R-CROSS-QSA-SHARED-PARTNER',
+        category: 'Quadro Societário & QSA',
+        org: 'Ministério da Saúde · UASG 250005',
+        fav: 'Fornecedor Alpha & Beta (Sócio Comum)',
+        doc: '11.222.333/0001-81',
+        hash: '7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d',
+        secHash: '8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e',
+        epistemic: 'Divergência entre Registros (Sócio QSA)',
+        pill: 'warn',
+        score: 0.83,
+        cents: 10000000,
+        parquetPath: 'r2://donb-raw/2026/10/rfb_qsa_0156.parquet',
+        metricName: 'Fornecedores com Mesmo Administrador',
+        metricVal: '2 fornecedores',
+        thresholdVal: '2 fornecedores',
+        benchmarkVal: '1 fornecedor',
+        officialSummary: 'O sócio administrador Carlos Eduardo da Silva (***.982.247-**) consta no QSA de 2 fornecedores distintos (Fornecedor Alpha e Fornecedor Beta) que receberam R$ 100.000,00 do Ministério da Saúde.',
+        statisticalSummary: 'Convergência cadastral identificada via base do CNPJ da Receita Federal em 2 pessoas jurídicas contratadas pelo mesmo órgão com R$ 100.000,00 despendidos.',
+        limitationSummary: 'A participação societária em múltiplos empreendimentos econômicos é permitida pela legislação brasileira. A identificação de sócio comum em fornecedores não configura conluio ou infração automática, podendo refletir grupos societários estruturados em ramos econômicos correlatos.',
+        chartLabels: ['Fornecedor Alpha', 'Fornecedor Beta', 'Média Órgão', 'Teto Dispensa'],
+        chartValues: [45, 55, 30, 100],
+        chartCompare: [30, 30, 30, 100]
+      },
+      {
+        id: 'DONB-2026-0157',
+        date: '07/10/2026',
+        source: 'RFB',
+        ruleCode: 'R-CROSS-QSA-DONOR-SUPPLIER',
+        category: 'Quadro Societário & QSA',
+        org: 'Câmara dos Deputados & TSE Eleições',
+        fav: 'Soluções Estratégicas Brasília (Sócio Doador)',
+        doc: '33.000.167/0001-01',
+        hash: '9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f',
+        secHash: '0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
+        epistemic: 'Divergência entre Registros (Sócio Doador)',
+        pill: 'warn',
+        score: 0.89,
+        cents: 12000000,
+        parquetPath: 'r2://donb-raw/2026/10/rfb_tse_0157.parquet',
+        metricName: 'Doação PF de Sócio Declarada ao TSE',
+        metricVal: 'R$ 30.000,00',
+        thresholdVal: 'R$ 0,00',
+        benchmarkVal: 'R$ 0,00',
+        officialSummary: 'A sócia Mariana Albuquerque (***.982.247-**) da empresa Soluções Estratégicas Brasília realizou doação de pessoa física de R$ 30.000,00 para a campanha eleitoral do parlamentar contratante, tendo a empresa recebido R$ 120.000,00 da cota parlamentar.',
+        statisticalSummary: 'Cruzamento triplo entre quadro societário da Receita Federal (QSA), despesas públicas reembolsadas e prestação de contas eleitorais de pessoa física no TSE vinculadas ao mandatário.',
+        limitationSummary: 'Doações eleitorais declaradas por pessoas físicas e a contratação de pessoas jurídicas de fornecimento são atos legalmente autorizados. A doação de campanha como pessoa física dentro dos limites legais e a contratação do fornecedor não presumem favorecimento indevido ou desvio de finalidade.',
+        chartLabels: ['Despesa Pública', 'Doação PF TSE', 'Média Categoria', 'Teto Legal 10%'],
+        chartValues: [120, 30, 25, 50],
+        chartCompare: [25, 0, 25, 50]
       }
     ];
 
@@ -1868,18 +1924,18 @@
       document.getElementById('explorer-foot-total').textContent = fmtBRL(sumCents);
 
       if (activeSource === 'all' && activeCategory === 'all' && !q) {
-        console.assert(sumCents === 415475000, 'Soma de todas as 14 regras deve fechar exatamente em R$ 4.154.750,00');
-        console.assert(filtered.length === 14, 'Total de regras auditadas deve ser exatamente 14');
+        console.assert(sumCents === 437475000, 'Soma de todas as 16 regras deve fechar exatamente em R$ 4.374.750,00');
+        console.assert(filtered.length === 16, 'Total de regras auditadas deve ser exatamente 16');
       }
     }
 
     const SCREEN_META = {
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 14 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 16 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
       },
       list: {
-        title: 'Explorador de despesas, contratos e sinais (14 Regras)',
+        title: 'Explorador de despesas, contratos e sinais (16 Regras)',
         sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
       },
       detail: {
