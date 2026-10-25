@@ -25,6 +25,7 @@ from deolhonobrasil.pipeline.models import (
     CuratedCorporateMemberRecord,
     CuratedElectoralDonation,
     CuratedParliamentaryAmendment,
+    CuratedPublicAgentRecord,
     CuratedPublicContract,
     CuratedPublicExpense,
     CuratedSanctionRecord,
@@ -1740,6 +1741,200 @@ def evaluate_cnae_contract_incompatibility_rule(
                 requires_human_review=True,
             )
         )
+
+    return signals
+
+
+def evaluate_public_agent_supplier_crossmatch_rule(
+    agents: Sequence[CuratedPublicAgentRecord],
+    corporate_members: Sequence[CuratedCorporateMemberRecord],
+    contracts: Sequence[CuratedPublicContract] = (),
+    expenses: Sequence[CuratedPublicExpense] = (),
+) -> list[AuditSignal]:
+    """Identifica agentes públicos ou dirigentes societários de fornecedores contratados pelo próprio órgão (SPEC-0016 / Lei 14.133/2021).
+
+    Código da Regra: R-CROSS-PUBLIC-AGENT-SUPPLIER
+    """
+    if not agents or not corporate_members or (not contracts and not expenses):
+        return []
+
+    # Mapear agentes públicos por chave de identificação: (nome_normalizado, cpf_mascarado) -> list[CuratedPublicAgentRecord]
+    agents_by_person: dict[tuple[str, str], list[CuratedPublicAgentRecord]] = defaultdict(list)
+    for agent in agents:
+        clean_name = " ".join(agent.agent_name.strip().upper().split())
+        clean_doc = agent.agent_doc_masked.strip()
+        agents_by_person[(clean_name, clean_doc)].append(agent)
+
+    def _clean_organ(code: str) -> str:
+        return code.strip().replace(".", "").replace("/", "").replace("-", "")
+
+    signals: list[AuditSignal] = []
+    seen_signals: set[str] = set()
+
+    # 1. Cruzar com contratos públicos
+    for contract in contracts:
+        sup_doc = contract.supplier_doc_normalized.strip()
+        root = extract_cnpj_root(sup_doc)
+        contract_organ_clean = _clean_organ(contract.organ_cnpj)
+
+        matching_qsa = [
+            q for q in corporate_members
+            if (root is not None and q.corporate_root_cnpj == root) or q.full_cnpj_normalized == sup_doc
+        ]
+
+        for qsa in matching_qsa:
+            qsa_name = " ".join(qsa.member_name_raw.strip().upper().split())
+            qsa_doc = qsa.member_doc_masked.strip()
+            person_key = (qsa_name, qsa_doc)
+
+            if person_key in agents_by_person:
+                matched_agents = agents_by_person[person_key]
+                for agent in matched_agents:
+                    agent_organ_clean = _clean_organ(agent.organ_code)
+                    # Exigência legal estrita: agente público deve pertencer ao MESMO órgão contratante
+                    if agent_organ_clean != contract_organ_clean:
+                        continue
+
+                    signal_key = f"{agent.agent_id}:{sup_doc}:{contract.pncp_control_number}"
+                    if signal_key in seen_signals:
+                        continue
+                    seen_signals.add(signal_key)
+
+                    clean_agent_name = sanitize_untrusted_text(agent.agent_name, 120)
+                    clean_organ_name = sanitize_untrusted_text(contract.organ_name, 150)
+                    clean_supplier = sanitize_untrusted_text(contract.supplier_name, 150)
+                    clean_position = sanitize_untrusted_text(agent.position_title, 100)
+
+                    provenance_hashes = tuple(
+                        sorted(
+                            {agent.provenance.raw_batch_sha256}
+                            | {qsa.provenance.raw_batch_sha256}
+                            | {contract.provenance.raw_batch_sha256}
+                        )
+                    )
+
+                    title = f"Agente público do próprio órgão identificado no quadro societário de fornecedor contratado em {clean_organ_name}"
+                    fact_summary = (
+                        f"O agente público {clean_agent_name} ({agent.agent_doc_masked}, cargo: {clean_position}), "
+                        f"vinculado ao órgão {clean_organ_name} ({contract.organ_cnpj}), figura como sócio/administrador "
+                        f"no QSA do fornecedor contratado {clean_supplier} ({sup_doc}) no contrato {contract.pncp_control_number} "
+                        f"no valor de R$ {contract.current_amount:.2f}."
+                    )
+                    stat_summary = (
+                        f"Cruzamento determinístico multicritério entre cadastro de servidores públicos "
+                        f"({agent.provenance.source.value}), Quadro de Sócios e Administradores (QSA/Receita Federal) "
+                        f"e contratos públicos (PNCP) com coincidência de órgão ({contract.organ_cnpj})."
+                    )
+                    scope_limit = (
+                        "O art. 9º, § 1º da Lei nº 14.133/2021 e a Súmula TCU nº 269 vedam a participação direta ou "
+                        "indireta em licitação e execução contratual de agentes públicos vinculados ao órgão licitante. "
+                        "O art. 117, X da Lei nº 8.112/1990 veda gerência de sociedade privada a servidores, admitindo "
+                        "participação como cotista sem poder de gestão. A indicação cadastral nominal não presume "
+                        "irregularidade automática, exigindo procedimento preliminar formal para averiguar efetivo exercício "
+                        "de gestão, licenças não remuneradas ou eventual homonímia antes de qualquer juízo de responsabilidade."
+                    )
+
+                    sig_id = f"SIG-PUB-AGENT-{compute_sha256_text(signal_key)[:16]}"
+                    signals.append(
+                        AuditSignal(
+                            signal_id=sig_id,
+                            rule_code="R-CROSS-PUBLIC-AGENT-SUPPLIER",
+                            title=title,
+                            official_fact_summary=fact_summary,
+                            statistical_inference_summary=stat_summary,
+                            scope_limitation_summary=scope_limit,
+                            epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                            metric_name="contracted_amount_with_agent_partner_brl",
+                            metric_value=contract.current_amount,
+                            threshold_value=Decimal("0.00"),
+                            audited_amount=contract.current_amount,
+                            provenance_hashes=provenance_hashes,
+                            requires_human_review=True,
+                        )
+                    )
+
+    # 2. Cruzar com despesas públicas
+    for expense in expenses:
+        if expense.net_amount <= Decimal("0.00"):
+            continue
+        sup_doc = expense.supplier_doc_normalized.strip()
+        root = extract_cnpj_root(sup_doc)
+        expense_organ_clean = _clean_organ(expense.organ_code)
+
+        matching_qsa = [
+            q for q in corporate_members
+            if (root is not None and q.corporate_root_cnpj == root) or q.full_cnpj_normalized == sup_doc
+        ]
+
+        for qsa in matching_qsa:
+            qsa_name = " ".join(qsa.member_name_raw.strip().upper().split())
+            qsa_doc = qsa.member_doc_masked.strip()
+            person_key = (qsa_name, qsa_doc)
+
+            if person_key in agents_by_person:
+                matched_agents = agents_by_person[person_key]
+                for agent in matched_agents:
+                    agent_organ_clean = _clean_organ(agent.organ_code)
+                    if agent_organ_clean != expense_organ_clean:
+                        continue
+
+                    signal_key = f"{agent.agent_id}:{sup_doc}:{expense.natural_key}"
+                    if signal_key in seen_signals:
+                        continue
+                    seen_signals.add(signal_key)
+
+                    clean_agent_name = sanitize_untrusted_text(agent.agent_name, 120)
+                    clean_organ_name = sanitize_untrusted_text(expense.organ_name, 150)
+                    clean_supplier = sanitize_untrusted_text(expense.supplier_name, 150)
+                    clean_position = sanitize_untrusted_text(agent.position_title, 100)
+
+                    provenance_hashes = tuple(
+                        sorted(
+                            {agent.provenance.raw_batch_sha256}
+                            | {qsa.provenance.raw_batch_sha256}
+                            | {expense.provenance.raw_batch_sha256}
+                        )
+                    )
+
+                    title = f"Agente público do próprio órgão identificado no quadro societário de favorecido de despesa em {clean_organ_name}"
+                    fact_summary = (
+                        f"O agente público {clean_agent_name} ({agent.agent_doc_masked}, cargo: {clean_position}), "
+                        f"vinculado ao órgão {clean_organ_name} ({expense.organ_code}), figura como sócio/administrador "
+                        f"no QSA do fornecedor favorecido {clean_supplier} ({sup_doc}) em despesa liquidada "
+                        f"no valor de R$ {expense.net_amount:.2f}."
+                    )
+                    stat_summary = (
+                        f"Cruzamento determinístico multicritério entre cadastro de servidores públicos "
+                        f"({agent.provenance.source.value}), Quadro de Sócios e Administradores (QSA/Receita Federal) "
+                        f"e despesas públicas ({expense.provenance.source.value}) com coincidência de órgão ({expense.organ_code})."
+                    )
+                    scope_limit = (
+                        "O art. 9º, § 1º da Lei nº 14.133/2021 e a Súmula TCU nº 269 vedam a participação direta ou "
+                        "indireta em licitação e execução contratual de agentes públicos vinculados ao órgão licitante. "
+                        "O art. 117, X da Lei nº 8.112/1990 veda gerência de sociedade privada a servidores, admitindo "
+                        "participação como cotista sem poder de gestão. A indicação cadastral nominal não presume "
+                        "irregularidade automática, exigindo procedimento preliminar formal para averiguar efetivo exercício "
+                        "de gestão, licenças não remuneradas ou eventual homonímia antes de qualquer juízo de responsabilidade."
+                    )
+
+                    sig_id = f"SIG-PUB-AGENT-{compute_sha256_text(signal_key)[:16]}"
+                    signals.append(
+                        AuditSignal(
+                            signal_id=sig_id,
+                            rule_code="R-CROSS-PUBLIC-AGENT-SUPPLIER",
+                            title=title,
+                            official_fact_summary=fact_summary,
+                            statistical_inference_summary=stat_summary,
+                            scope_limitation_summary=scope_limit,
+                            epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                            metric_name="contracted_amount_with_agent_partner_brl",
+                            metric_value=expense.net_amount,
+                            threshold_value=Decimal("0.00"),
+                            audited_amount=expense.net_amount,
+                            provenance_hashes=provenance_hashes,
+                            requires_human_review=True,
+                        )
+                    )
 
     return signals
 

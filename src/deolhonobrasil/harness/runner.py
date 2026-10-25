@@ -100,6 +100,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0013-corporate-members-and-qsa-crossmatch", "data-model.md"),
         ("SPEC-0014-company-age-and-capital-risk-indicators", "data-model.md"),
         ("SPEC-0015-cnae-contract-incompatibility", "data-model.md"),
+        ("SPEC-0016-public-agent-supplier-crossmatch", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:
@@ -210,6 +211,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         CuratedCorporateMemberRecord,
         CuratedElectoralDonation,
         CuratedParliamentaryAmendment,
+        CuratedPublicAgentRecord,
         CuratedPublicContract,
         CuratedPublicExpense,
         CuratedSanctionRecord,
@@ -225,6 +227,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         CuratedElectoralDonation,
         CuratedCorporateMemberRecord,
         CuratedCompanyRegistrationRecord,
+        CuratedPublicAgentRecord,
         AuditSignal,
         System1Decision,
         GroundedDossierSection,

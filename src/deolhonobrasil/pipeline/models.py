@@ -34,6 +34,7 @@ class OfficialSource(StrEnum):
     RECEITA_FEDERAL_CNPJ = "RECEITA_FEDERAL_CNPJ"
     IBGE_LOCALIDADES = "IBGE_LOCALIDADES"
     TSE_ELEICOES = "TSE_ELEICOES"
+    PORTAL_TRANSPARENCIA_SERVIDORES = "PORTAL_TRANSPARENCIA_SERVIDORES"
 
 
 class EpistemicClassification(StrEnum):
@@ -619,6 +620,85 @@ class CuratedCompanyRegistrationRecord:
             registration_status=registration_status,
             provenance=provenance,
             secondary_cnae_codes=tuple(secondary_cnae_codes),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CuratedPublicAgentRecord:
+    """Registro padronizado de agente público / servidor público (SPEC-0016 / FR-034 / DATA-018)."""
+
+    agent_id: str
+    organ_code: str
+    organ_name: str
+    agent_name: str
+    agent_doc_masked: str
+    position_title: str
+    status: str
+    provenance: ProvenanceMetadata
+    natural_key: str = field(default="")
+
+    def __post_init__(self) -> None:
+        clean_agent_id = sanitize_untrusted_text(self.agent_id, 80)
+        if not clean_agent_id:
+            raise ValueError("agent_id é obrigatório.")
+        clean_organ_code = sanitize_untrusted_text(self.organ_code, 50)
+        if not clean_organ_code:
+            raise ValueError("organ_code é obrigatório.")
+        clean_organ_name = sanitize_untrusted_text(self.organ_name, 200)
+        if not clean_organ_name:
+            raise ValueError("organ_name é obrigatório.")
+        clean_name = sanitize_untrusted_text(self.agent_name, 250)
+        if not clean_name:
+            raise ValueError("agent_name é obrigatório.")
+        clean_doc = sanitize_untrusted_text(self.agent_doc_masked, 50)
+        if not clean_doc:
+            raise ValueError("agent_doc_masked é obrigatório.")
+        clean_pos = sanitize_untrusted_text(self.position_title, 150) or "Agente Público"
+        clean_status = sanitize_untrusted_text(self.status, 50) or "ATIVO"
+
+        object.__setattr__(self, "agent_id", clean_agent_id)
+        object.__setattr__(self, "organ_code", clean_organ_code)
+        object.__setattr__(self, "organ_name", clean_organ_name)
+        object.__setattr__(self, "agent_name", clean_name)
+        object.__setattr__(self, "agent_doc_masked", clean_doc)
+        object.__setattr__(self, "position_title", clean_pos)
+        object.__setattr__(self, "status", clean_status)
+
+        if not self.natural_key:
+            nk = compute_sha256_text(
+                f"{self.provenance.source.value}|{clean_organ_code}|{clean_agent_id}|{clean_doc}|{clean_name}"
+            )
+            object.__setattr__(self, "natural_key", nk)
+
+    @classmethod
+    def create_validated(
+        cls,
+        *,
+        agent_id: str,
+        organ_code: str,
+        organ_name: str,
+        agent_name: str,
+        agent_doc_raw: str | None = None,
+        agent_doc_masked: str | None = None,
+        position_title: str = "Agente Público",
+        provenance: ProvenanceMetadata,
+        status: str = "ATIVO",
+    ) -> CuratedPublicAgentRecord:
+        raw_doc = (agent_doc_raw or agent_doc_masked or "").strip()
+        if not raw_doc:
+            raise ValueError("Documento de identificação do agente público é obrigatório.")
+        doc_norm, doc_type = normalize_and_protect_document(raw_doc)
+        if doc_type != "CPF_MASKED":
+            raise ValueError(f"Documento do agente público deve ser um CPF válido ou já mascarado: {raw_doc}")
+        return cls(
+            agent_id=agent_id,
+            organ_code=organ_code,
+            organ_name=organ_name,
+            agent_name=agent_name,
+            agent_doc_masked=doc_norm,
+            position_title=position_title,
+            status=status,
+            provenance=provenance,
         )
 
 
