@@ -1,0 +1,55 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "light": {
+      "background": {"$value": "#f5f7f6"},
+      "surface": {"$value": "#ffffff"},
+      "surfaceSubtle": {"$value": "#f0f4f2"},
+      "text": {"$value": "#15231f"},
+      "textMuted": {"$value": "#66736f"},
+      "border": {"$value": "#dce4e1"},
+      "brand": {"$value": "#12654c"},
+      "brandStrong": {"$value": "#0b4c39"},
+      "brandSoft": {"$value": "#e3f2ec"},
+      "accent": {"$value": "#d3f05b"},
+      "warning": {"$value": "#a55b12"},
+      "warningSoft": {"$value": "#fff2dc"},
+      "info": {"$value": "#265b9b"},
+      "infoSoft": {"$value": "#eaf2fc"}
+    },
+    "dark": {
+      "background": {"$value": "#0e1714"},
+      "surface": {"$value": "#14201c"},
+      "surfaceSubtle": {"$value": "#1a2924"},
+      "text": {"$value": "#edf4f1"},
+      "textMuted": {"$value": "#a3b2ad"},
+      "border": {"$value": "#293b35"},
+      "brand": {"$value": "#61c29f"},
+      "brandSoft": {"$value": "#193b30"}
+    }
+  },
+  "font": {
+    "family": {
+      "body": {"$value": "DM Sans, sans-serif"},
+      "display": {"$value": "Manrope, sans-serif"},
+      "mono": {"$value": "ui-monospace, monospace"}
+    }
+  },
+  "space": {
+    "1": {"$value": "4px"}, "2": {"$value": "8px"}, "3": {"$value": "12px"},
+    "4": {"$value": "16px"}, "5": {"$value": "20px"}, "6": {"$value": "24px"},
+    "8": {"$value": "32px"}, "10": {"$value": "40px"}, "12": {"$value": "48px"},
+    "16": {"$value": "64px"}
+  },
+  "radius": {
+    "sm": {"$value": "8px"}, "md": {"$value": "10px"},
+    "lg": {"$value": "14px"}, "xl": {"$value": "22px"},
+    "pill": {"$value": "999px"}
+  },
+  "breakpoint": {
+    "mobile": {"$value": "390px"},
+    "tablet": {"$value": "768px"},
+    "desktop": {"$value": "1050px"},
+    "wide": {"$value": "1440px"}
+  }
+}
