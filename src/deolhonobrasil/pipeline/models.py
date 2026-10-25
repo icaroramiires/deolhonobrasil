@@ -514,9 +514,17 @@ class CuratedCorporateMemberRecord:
             object.__setattr__(self, "natural_key", nk)
 
 
+def normalize_cnae_code(raw: str) -> str:
+    """Normaliza código CNAE para 7 dígitos numéricos estritos (ex: '42.11-1-01' -> '4211101')."""
+    digits = "".join(ch for ch in str(raw) if ch.isdigit())
+    if len(digits) != 7:
+        raise ValueError(f"Código CNAE deve conter exatamente 7 dígitos numéricos: '{raw}'")
+    return digits
+
+
 @dataclass(frozen=True, slots=True)
 class CuratedCompanyRegistrationRecord:
-    """Cadastro formal de Pessoa Jurídica na Receita Federal (RFB CNPJ) (SPEC-0014)."""
+    """Cadastro formal de Pessoa Jurídica na Receita Federal (RFB CNPJ) (SPEC-0014 / SPEC-0015)."""
 
     cnpj_normalized: str
     corporate_root_cnpj: str
@@ -527,7 +535,13 @@ class CuratedCompanyRegistrationRecord:
     cnae_main_code: str
     registration_status: str
     provenance: ProvenanceMetadata
+    secondary_cnae_codes: tuple[str, ...] = field(default_factory=tuple)
     natural_key: str = field(default="")
+
+    @property
+    def main_cnae_code(self) -> str:
+        """Alias padronizado para cnae_main_code (SPEC-0015)."""
+        return self.cnae_main_code
 
     def __post_init__(self) -> None:
         digits = "".join(ch for ch in str(self.cnpj_normalized) if ch.isdigit())
@@ -540,7 +554,22 @@ class CuratedCompanyRegistrationRecord:
         if not clean_legal:
             raise ValueError("legal_name (razão social) é obrigatório.")
         clean_trade = sanitize_untrusted_text(self.trade_name, 250) if self.trade_name else None
-        clean_cnae = sanitize_untrusted_text(self.cnae_main_code, 20) or "0000-0/00"
+
+        digits_cnae = "".join(ch for ch in str(self.cnae_main_code) if ch.isdigit())
+        if len(digits_cnae) == 7:
+            clean_cnae = digits_cnae
+        elif not digits_cnae or digits_cnae == "0000000" or self.cnae_main_code == "0000-0/00":
+            clean_cnae = "0000000"
+        else:
+            raise ValueError(f"Código CNAE principal deve conter 7 dígitos numéricos: '{self.cnae_main_code}'")
+
+        clean_secondaries: list[str] = []
+        for sec in self.secondary_cnae_codes:
+            sec_digits = "".join(ch for ch in str(sec) if ch.isdigit())
+            if len(sec_digits) != 7:
+                raise ValueError(f"Código CNAE secundário deve conter 7 dígitos numéricos: '{sec}'")
+            clean_secondaries.append(sec_digits)
+
         clean_status = sanitize_untrusted_text(self.registration_status, 50) or "ATIVA"
         capital = Decimal(str(self.share_capital_brl))
         if capital < Decimal("0.00"):
@@ -553,10 +582,12 @@ class CuratedCompanyRegistrationRecord:
         object.__setattr__(self, "share_capital_brl", capital)
         object.__setattr__(self, "cnae_main_code", clean_cnae)
         object.__setattr__(self, "registration_status", clean_status)
+        object.__setattr__(self, "secondary_cnae_codes", tuple(clean_secondaries))
 
         if not self.natural_key:
+            secondaries_str = "|".join(clean_secondaries)
             nk = compute_sha256_text(
-                f"{self.provenance.source.value}|{digits}|{self.opening_date.isoformat()}|{capital:.2f}"
+                f"{self.provenance.source.value}|{digits}|{self.opening_date.isoformat()}|{capital:.2f}|{clean_cnae}|{secondaries_str}"
             )
             object.__setattr__(self, "natural_key", nk)
 
@@ -569,8 +600,9 @@ class CuratedCompanyRegistrationRecord:
         share_capital_raw: str | int | float | Decimal,
         provenance: ProvenanceMetadata,
         trade_name: str | None = None,
-        cnae_main_code: str = "0000-0/00",
+        cnae_main_code: str = "0000000",
         registration_status: str = "ATIVA",
+        secondary_cnae_codes: Sequence[str] = (),
     ) -> CuratedCompanyRegistrationRecord:
         doc_norm, doc_type = normalize_and_protect_document(cnpj_raw)
         if doc_type != "CNPJ":
@@ -586,6 +618,7 @@ class CuratedCompanyRegistrationRecord:
             cnae_main_code=cnae_main_code,
             registration_status=registration_status,
             provenance=provenance,
+            secondary_cnae_codes=tuple(secondary_cnae_codes),
         )
 
 

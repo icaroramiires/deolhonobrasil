@@ -99,6 +99,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0012-electoral-campaign-donations", "data-model.md"),
         ("SPEC-0013-corporate-members-and-qsa-crossmatch", "data-model.md"),
         ("SPEC-0014-company-age-and-capital-risk-indicators", "data-model.md"),
+        ("SPEC-0015-cnae-contract-incompatibility", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:

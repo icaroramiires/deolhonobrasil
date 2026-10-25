@@ -1613,3 +1613,134 @@ def evaluate_low_capital_outlier_rule(
     return signals
 
 
+HIGH_RISK_OBJECT_SECTORS: dict[str, tuple[str, ...]] = {
+    # Engenharia e Construção Pesada (Divisões 41, 42, 43)
+    "pavimentacao": ("41", "42", "43"),
+    "terraplanagem": ("41", "42", "43"),
+    "drenagem": ("41", "42", "43"),
+    "asfalto": ("41", "42", "43"),
+    "reforma predial": ("41", "42", "43"),
+    "construcao": ("41", "42", "43"),
+    "obras de engenharia": ("41", "42", "43"),
+    # Tecnologia da Informação (Divisões 62, 63)
+    "software": ("62", "63"),
+    "sistema de informacao": ("62", "63"),
+    "desenvolvimento web": ("62", "63"),
+    "computacao em nuvem": ("62", "63"),
+    "banco de dados": ("62", "63"),
+    # Fretamento Aéreo e Locação de Aeronaves (Divisões 51, 77)
+    "aeronave": ("51", "77"),
+    "helicoptero": ("51", "77"),
+    "fretamento aereo": ("51", "77"),
+    # Serviços Hospitalares e Médicos (Divisão 86)
+    "servicos medicos": ("86",),
+    "atendimento hospitalar": ("86",),
+    "analises clinicas": ("86",),
+}
+
+
+def evaluate_cnae_contract_incompatibility_rule(
+    contracts: Sequence[CuratedPublicContract],
+    companies: Sequence[CuratedCompanyRegistrationRecord],
+    min_contract_threshold: Decimal = Decimal("50000.00"),
+) -> list[AuditSignal]:
+    """Regra `R-CORP-CNAE-INCOMPATIBLE` (SPEC-0015):
+    Identifica contratações públicas onde o objeto adjudicado de alta especificidade técnica
+    é materialmente incompatível com as atividades econômicas cadastradas da empresa (CNAE principal
+    e tupla de secundários perante a Receita Federal).
+    """
+    if not contracts or not companies:
+        return []
+
+    company_by_cnpj = {c.cnpj_normalized: c for c in companies}
+    company_by_root = {c.corporate_root_cnpj: c for c in companies}
+
+    signals: list[AuditSignal] = []
+
+    for contract in contracts:
+        if contract.current_amount < min_contract_threshold:
+            continue
+
+        company = company_by_cnpj.get(contract.supplier_doc_normalized) or company_by_root.get(
+            contract.supplier_doc_normalized[:8]
+        )
+        if not company:
+            continue
+
+        obj_lower = contract.contract_object.lower()
+
+        # Determinar divisões necessárias com base no objeto contratual
+        required_divisions: set[str] = set()
+        for keyword, divs in HIGH_RISK_OBJECT_SECTORS.items():
+            if keyword in obj_lower:
+                required_divisions.update(divs)
+
+        if not required_divisions:
+            # Não é objeto de alta especificidade monitorado
+            continue
+
+        # Coletar divisões da empresa (CNAE principal e secundários)
+        company_divisions: set[str] = set()
+        if len(company.cnae_main_code) >= 2:
+            company_divisions.add(company.cnae_main_code[:2])
+        for sec in company.secondary_cnae_codes:
+            if len(sec) >= 2:
+                company_divisions.add(sec[:2])
+
+        # Se houver qualquer interseção, a empresa é compatível
+        if company_divisions & required_divisions:
+            continue
+
+        # Incompatibilidade material constatada
+        clean_supplier = sanitize_untrusted_text(company.legal_name, 120)
+        clean_organ = sanitize_untrusted_text(contract.organ_name, 100)
+        clean_object = sanitize_untrusted_text(contract.contract_object, 120)
+
+        hashes = tuple(
+            sorted({company.provenance.raw_batch_sha256, contract.provenance.raw_batch_sha256})
+        )
+
+        secondaries_desc = ", ".join(company.secondary_cnae_codes) if company.secondary_cnae_codes else "nenhum"
+        req_divs_desc = ", ".join(sorted(required_divisions))
+
+        title = f"Incompatibilidade entre atividade econômica CNAE ({company.cnae_main_code}) e objeto contratado em {clean_organ}"
+        fact_summary = (
+            f"Contrato formalizado no montante de R$ {contract.current_amount:.2f} com a empresa {clean_supplier} "
+            f"({company.cnpj_normalized}) para o objeto '{clean_object}'. A empresa possui CNAE principal "
+            f"{company.cnae_main_code} e secundários [{secondaries_desc}], sem registro das divisões CNAE "
+            f"afins ao objeto ({req_divs_desc})."
+        )
+        stat_summary = (
+            f"Detecção determinística de incompatibilidade entre as atividades econômicas oficiais registradas "
+            f"no cadastro da Receita Federal e o objeto contratual licitado (limiar mínimo de relevância: "
+            f"R$ {min_contract_threshold:.2f})."
+        )
+        scope_limit = (
+            "A Classificação Nacional de Atividades Econômicas (CNAE) tem finalidade prioritariamente tributária "
+            "e estatística perante a administração fiscal. A divergência cadastral não comprova incapacidade "
+            "operacional nem nulidade do contrato, podendo a empresa ter capacidade técnica comprovada em atestados "
+            "ou estar em processo de atualização societária perante a Junta Comercial."
+        )
+
+        sig_id = f"SIG-CNAE-{compute_sha256_text(f'{contract.pncp_control_number}:{company.cnpj_normalized}:{clean_object}')[:16]}"
+        signals.append(
+            AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-CORP-CNAE-INCOMPATIBLE",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                metric_name="cnae_sectoral_incompatibility_flag",
+                metric_value=Decimal("1.00"),
+                threshold_value=Decimal("0.00"),
+                audited_amount=contract.current_amount,
+                provenance_hashes=hashes,
+                requires_human_review=True,
+            )
+        )
+
+    return signals
+
+
