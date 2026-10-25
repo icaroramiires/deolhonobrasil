@@ -635,10 +635,10 @@
             Visão geral
           </button>
           <button type="button" class="nav-item" data-nav="list">
-            Explorador <span class="nav-count">16 Regras</span>
+            Explorador <span class="nav-count">18 Regras</span>
           </button>
           <button type="button" class="nav-item" data-nav="detail">
-            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">16</span>
+            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">18</span>
           </button>
           <button type="button" class="nav-item" data-nav="inbox">
             Direito de resposta <span class="nav-count">4</span>
@@ -657,7 +657,7 @@
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
-          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 16 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
+          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 18 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
         </div>
         <div class="head-actions">
           <div class="seg" role="tablist" aria-label="Exercício fiscal">
@@ -690,8 +690,8 @@
           <div class="kpi">
             <div class="kpi-label">Regras de auditoria ativas</div>
             <div class="kpi-row">
-              <span class="kpi-value">16 regras</span>
-              <span class="delta down">16 dossiês</span>
+              <span class="kpi-value">18 regras</span>
+              <span class="delta down">18 dossiês</span>
             </div>
             <div class="kpi-sub">Triagem Laya ONNX (System 1)</div>
           </div>
@@ -801,12 +801,12 @@
                 <span class="kv-val">42.850 docs · 100,0%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (16 Regras)</span>
+                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (18 Regras)</span>
                 <span class="kv-val">312 sinais · 0,73%</span>
               </div>
               <div class="kv-row">
                 <span class="kv-label">3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO]</span>
-                <span class="kv-val">16 dossiês em curadoria · 0,03%</span>
+                <span class="kv-val">18 dossiês em curadoria · 0,04%</span>
               </div>
             </div>
 
@@ -819,10 +819,10 @@
           <article class="card card-flush">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Sinais matemáticos prioritários (16 Regras)</h2>
+                <h2 class="card-title">Sinais matemáticos prioritários (18 Regras)</h2>
                 <div class="card-meta">Triagem Laya ONNX + regras determinísticas</div>
               </div>
-              <button type="button" class="btn" data-nav="list">Ver todas as 16</button>
+              <button type="button" class="btn" data-nav="list">Ver todas as 18</button>
             </div>
 
             <div class="table-wrap">
@@ -891,17 +891,17 @@
         <article class="card card-flush">
           <div class="toolbar">
             <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
-              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (16)</button>
+              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (18)</button>
               <button type="button" role="tab" aria-selected="false" data-source="PNCP">PNCP Contratos</button>
               <button type="button" role="tab" aria-selected="false" data-source="CGU">CGU Transparência</button>
               <button type="button" role="tab" aria-selected="false" data-source="CEAP">Câmara / Senado</button>
               <button type="button" role="tab" aria-selected="false" data-source="TSE">TSE Eleições</button>
-              <button type="button" role="tab" aria-selected="false" data-source="RFB">Receita Federal (QSA)</button>
+              <button type="button" role="tab" aria-selected="false" data-source="RFB">Receita Federal (QSA / CNPJ)</button>
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <select class="select" id="explorer-rule-select" aria-label="Filtrar por categoria de regra">
-                <option value="all">Todas as Categorias (16 Regras)</option>
+                <option value="all">Todas as Categorias (18 Regras)</option>
                 <option value="Sobrecusto & Catálogo">Sobrecusto & Catálogo (Z-Score)</option>
                 <option value="Concentração & Monopólio">Concentração & Monopólio (HHI/80%)</option>
                 <option value="Cota Parlamentar">Cota Parlamentar (CEAP Outlier)</option>
@@ -913,6 +913,7 @@
                 <option value="Temporal, Feriados & Recesso">Temporal (Fim de Semana/Recesso)</option>
                 <option value="Eleitoral TSE">Eleitoral TSE (Doação e Fornecimento)</option>
                 <option value="Quadro Societário & QSA">Quadro Societário & QSA (Sócios & Doações)</option>
+                <option value="Risco Cadastral & Capital">Risco Cadastral & Capital (Abertura & Capital)</option>
               </select>
 
               <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido, regra ou CNPJ" aria-label="Buscar favorecido, regra ou CNPJ">
@@ -1788,6 +1789,60 @@
         chartLabels: ['Despesa Pública', 'Doação PF TSE', 'Média Categoria', 'Teto Legal 10%'],
         chartValues: [120, 30, 25, 50],
         chartCompare: [25, 0, 25, 50]
+      },
+      {
+        id: 'DONB-2026-0158',
+        date: '06/10/2026',
+        source: 'RFB',
+        ruleCode: 'R-CORP-RECENT-CREATION',
+        category: 'Risco Cadastral & Capital',
+        org: 'Ministério dos Transportes · DNIT',
+        fav: 'Nova Fronteira Pavimentação Ltda.',
+        doc: '58.112.304/0001-99',
+        hash: '1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a',
+        secHash: '2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b',
+        epistemic: 'Anomalia Estatística (Abertura Recente)',
+        pill: 'warn',
+        score: 0.85,
+        cents: 18000000,
+        parquetPath: 'r2://donb-raw/2026/10/rfb_cadastral_0158.parquet',
+        metricName: 'Tempo de Abertura até Contratação',
+        metricVal: '42 dias',
+        thresholdVal: '180 dias',
+        benchmarkVal: 'R$ 50.000,00',
+        officialSummary: 'Contrato formalizado em 06/10/2026 no valor de R$ 180.000,00 com a empresa Nova Fronteira Pavimentação Ltda. (CNPJ 58.112.304/0001-99), constituída perante a Receita Federal em 25/08/2026 (42 dias antes da contratação).',
+        statisticalSummary: 'Identificação de contratação relevante de fornecedor constituído há menos de 180 dias da celebração do ajuste ou emissão do empenho, configurando indicador cadastral de risco operacional.',
+        limitationSummary: 'A abertura recente de pessoa jurídica para prestação de serviços ou fornecimento de bens constitui ato lícito assegurado pelo princípio da livre iniciativa. A idade cadastral reduzida não presume irregularidade ou incapacidade operacional sem avaliação concreta do objeto executado.',
+        chartLabels: ['Contrato DNIT', 'Média Setor', 'Capital Social', 'Teto Dispensa'],
+        chartValues: [180, 80, 20, 100],
+        chartCompare: [80, 80, 20, 100]
+      },
+      {
+        id: 'DONB-2026-0159',
+        date: '05/10/2026',
+        source: 'RFB',
+        ruleCode: 'R-CORP-LOW-CAPITAL-OUTLIER',
+        category: 'Risco Cadastral & Capital',
+        org: 'Comando do Exército · UASG 160010',
+        fav: 'Prime Soluções Logísticas Eireli',
+        doc: '49.882.100/0001-44',
+        hash: '3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c',
+        secHash: '4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d',
+        epistemic: 'Anomalia Estatística (Capital Desproporcional)',
+        pill: 'warn',
+        score: 0.91,
+        cents: 25000000,
+        parquetPath: 'r2://donb-raw/2026/10/rfb_capital_0159.parquet',
+        metricName: 'Razão Valor Contratado / Capital Social',
+        metricVal: '125,00x',
+        thresholdVal: '50,00x',
+        benchmarkVal: 'R$ 2.000,00',
+        officialSummary: 'Contratação no valor de R$ 250.000,00 da empresa Prime Soluções Logísticas Eireli (CNPJ 49.882.100/0001-44), cujo capital social declarado perante o cadastro da Receita Federal é de R$ 2.000,00.',
+        statisticalSummary: 'Desproporcionalidade cadastral extrema calculada em 125,00 vezes o capital social integralizado perante o montante público contratado, superando amplamente o limiar de triagem de 50,00x.',
+        limitationSummary: 'A legislação societária brasileira não fixa piso obrigatório de capital social para sociedades limitadas e o capital declarado não reflete necessariamente o patrimônio líquido atualizado, o fluxo de caixa ou garantias contratuais acessórias apresentadas.',
+        chartLabels: ['Valor Contratado', 'Capital Declarado', 'Média Capital', 'Limite 50x'],
+        chartValues: [250, 2, 50, 100],
+        chartCompare: [100, 2, 50, 100]
       }
     ];
 
@@ -1924,18 +1979,18 @@
       document.getElementById('explorer-foot-total').textContent = fmtBRL(sumCents);
 
       if (activeSource === 'all' && activeCategory === 'all' && !q) {
-        console.assert(sumCents === 437475000, 'Soma de todas as 16 regras deve fechar exatamente em R$ 4.374.750,00');
-        console.assert(filtered.length === 16, 'Total de regras auditadas deve ser exatamente 16');
+        console.assert(sumCents === 480475000, 'Soma de todas as 18 regras deve fechar exatamente em R$ 4.804.750,00');
+        console.assert(filtered.length === 18, 'Total de regras auditadas deve ser exatamente 18');
       }
     }
 
     const SCREEN_META = {
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 16 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 18 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
       },
       list: {
-        title: 'Explorador de despesas, contratos e sinais (16 Regras)',
+        title: 'Explorador de despesas, contratos e sinais (18 Regras)',
         sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
       },
       detail: {
