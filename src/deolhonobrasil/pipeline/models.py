@@ -515,6 +515,81 @@ class CuratedCorporateMemberRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class CuratedCompanyRegistrationRecord:
+    """Cadastro formal de Pessoa Jurídica na Receita Federal (RFB CNPJ) (SPEC-0014)."""
+
+    cnpj_normalized: str
+    corporate_root_cnpj: str
+    legal_name: str
+    trade_name: str | None
+    opening_date: date
+    share_capital_brl: Decimal
+    cnae_main_code: str
+    registration_status: str
+    provenance: ProvenanceMetadata
+    natural_key: str = field(default="")
+
+    def __post_init__(self) -> None:
+        digits = "".join(ch for ch in str(self.cnpj_normalized) if ch.isdigit())
+        if len(digits) != 14:
+            raise ValueError(f"CNPJ deve conter 14 dígitos numéricos: '{self.cnpj_normalized}'")
+        clean_root = (self.corporate_root_cnpj or digits[:8]).strip()
+        if len(clean_root) != 8 or not clean_root.isdigit():
+            clean_root = digits[:8]
+        clean_legal = sanitize_untrusted_text(self.legal_name, 250)
+        if not clean_legal:
+            raise ValueError("legal_name (razão social) é obrigatório.")
+        clean_trade = sanitize_untrusted_text(self.trade_name, 250) if self.trade_name else None
+        clean_cnae = sanitize_untrusted_text(self.cnae_main_code, 20) or "0000-0/00"
+        clean_status = sanitize_untrusted_text(self.registration_status, 50) or "ATIVA"
+        capital = Decimal(str(self.share_capital_brl))
+        if capital < Decimal("0.00"):
+            raise ValueError("Capital social não pode ser negativo.")
+
+        object.__setattr__(self, "cnpj_normalized", digits)
+        object.__setattr__(self, "corporate_root_cnpj", clean_root)
+        object.__setattr__(self, "legal_name", clean_legal)
+        object.__setattr__(self, "trade_name", clean_trade)
+        object.__setattr__(self, "share_capital_brl", capital)
+        object.__setattr__(self, "cnae_main_code", clean_cnae)
+        object.__setattr__(self, "registration_status", clean_status)
+
+        if not self.natural_key:
+            nk = compute_sha256_text(
+                f"{self.provenance.source.value}|{digits}|{self.opening_date.isoformat()}|{capital:.2f}"
+            )
+            object.__setattr__(self, "natural_key", nk)
+
+    @classmethod
+    def create_validated(
+        cls,
+        cnpj_raw: str,
+        legal_name: str,
+        opening_date: date,
+        share_capital_raw: str | int | float | Decimal,
+        provenance: ProvenanceMetadata,
+        trade_name: str | None = None,
+        cnae_main_code: str = "0000-0/00",
+        registration_status: str = "ATIVA",
+    ) -> CuratedCompanyRegistrationRecord:
+        doc_norm, doc_type = normalize_and_protect_document(cnpj_raw)
+        if doc_type != "CNPJ":
+            raise ValueError(f"Documento informado não é um CNPJ válido de 14 dígitos: {cnpj_raw}")
+        capital = parse_strict_monetary_value(share_capital_raw, "share_capital_brl")
+        return cls(
+            cnpj_normalized=doc_norm,
+            corporate_root_cnpj=doc_norm[:8],
+            legal_name=legal_name,
+            trade_name=trade_name,
+            opening_date=opening_date,
+            share_capital_brl=capital,
+            cnae_main_code=cnae_main_code,
+            registration_status=registration_status,
+            provenance=provenance,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class QuarantinedRecord:
 
     """Registro isolado em quarentena por falha de validação de schema ou integridade (Seção 8)."""

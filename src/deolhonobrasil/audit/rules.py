@@ -21,6 +21,7 @@ from deolhonobrasil.audit.statistics import (
     evaluate_benford_first_digit,
 )
 from deolhonobrasil.pipeline.models import (
+    CuratedCompanyRegistrationRecord,
     CuratedCorporateMemberRecord,
     CuratedElectoralDonation,
     CuratedParliamentaryAmendment,
@@ -1353,4 +1354,262 @@ def evaluate_qsa_individual_donor_rule(
                 )
 
     return None
+
+
+def evaluate_recent_company_creation_rule(
+    companies: Sequence[CuratedCompanyRegistrationRecord],
+    expenses: Sequence[CuratedPublicExpense] | None = None,
+    contracts: Sequence[CuratedPublicContract] | None = None,
+    max_age_days: int = 180,
+    min_amount_threshold: Decimal = Decimal("50000.00"),
+) -> list[AuditSignal]:
+    """Identifica contratações públicas celebradas com empresas recém-constituídas (< 180 dias) (SPEC-0014).
+
+    Código da Regra: R-CORP-RECENT-CREATION
+    """
+    if not companies or (not expenses and not contracts):
+        return []
+
+    company_by_cnpj: dict[str, CuratedCompanyRegistrationRecord] = {
+        c.cnpj_normalized: c for c in companies
+    }
+    company_by_root: dict[str, CuratedCompanyRegistrationRecord] = {
+        c.corporate_root_cnpj: c for c in companies
+    }
+
+    signals: list[AuditSignal] = []
+
+    # 1. Avaliar contratos
+    if contracts:
+        for contract in contracts:
+            if contract.current_amount < min_amount_threshold:
+                continue
+            supplier_doc = contract.supplier_doc_normalized
+            company = company_by_cnpj.get(supplier_doc) or company_by_root.get(supplier_doc[:8])
+            if not company:
+                continue
+            contract_dt = contract.signature_date
+            if not contract_dt:
+                continue
+            age_days = (contract_dt - company.opening_date).days
+            if 0 <= age_days < max_age_days:
+                clean_organ = sanitize_untrusted_text(contract.organ_name, 100)
+                clean_supplier = sanitize_untrusted_text(company.legal_name, 120)
+                amount = contract.current_amount
+                hashes = tuple(sorted({company.provenance.raw_batch_sha256, contract.provenance.raw_batch_sha256}))
+                title = f"Contratação de empresa recém-constituída ({age_days} dias) por {clean_organ}"
+                fact_summary = (
+                    f"A empresa {clean_supplier} ({company.cnpj_normalized}), com data de abertura cadastral em "
+                    f"{company.opening_date.strftime('%d/%m/%Y')}, celebrou contrato público de R$ {amount:.2f} com "
+                    f"{clean_organ} em {contract_dt.strftime('%d/%m/%Y')}, apenas {age_days} dias após sua constituição formal."
+                )
+                stat_summary = (
+                    f"A celebração do contrato ocorreu no intervalo de {age_days} dias da abertura cadastral da pessoa jurídica, "
+                    f"inferior ao limiar de referência de {max_age_days} dias de maturidade operacional."
+                )
+                scope_limit = (
+                    "A contratação de empresas recém-constituídas é juridicamente válida desde que atendidos os requisitos "
+                    "de habilitação jurídica e qualificação técnica do edital. A abertura recente não comprova irregularidade, "
+                    "podendo corresponder a consórcios de profissionais experientes ou reorganização societária legítima."
+                )
+                sig_id = f"SIG-REC-CORP-{compute_sha256_text(f'{contract.pncp_control_number}:{company.cnpj_normalized}:{age_days}')[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-CORP-RECENT-CREATION",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                        metric_name="company_age_days_at_contract",
+                        metric_value=Decimal(str(age_days)),
+                        threshold_value=Decimal(str(max_age_days)),
+                        audited_amount=amount,
+                        provenance_hashes=hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    # 2. Avaliar despesas
+    if expenses:
+        for exp in expenses:
+            if exp.net_amount < min_amount_threshold:
+                continue
+            supplier_doc = exp.supplier_doc_normalized
+            company = company_by_cnpj.get(supplier_doc) or company_by_root.get(supplier_doc[:8])
+            if not company:
+                continue
+            exp_dt = exp.issue_date
+            age_days = (exp_dt - company.opening_date).days
+            if 0 <= age_days < max_age_days:
+                clean_organ = sanitize_untrusted_text(exp.organ_name, 100)
+                clean_supplier = sanitize_untrusted_text(company.legal_name, 120)
+                amount = exp.net_amount
+                hashes = tuple(sorted({company.provenance.raw_batch_sha256, exp.provenance.raw_batch_sha256}))
+                title = f"Despesa pública realizada com empresa recém-constituída ({age_days} dias) em {clean_organ}"
+                fact_summary = (
+                    f"A empresa {clean_supplier} ({company.cnpj_normalized}), aberta em {company.opening_date.strftime('%d/%m/%Y')}, "
+                    f"emitiu documento fiscal de R$ {amount:.2f} para {clean_organ} em {exp_dt.strftime('%d/%m/%Y')}, "
+                    f"após {age_days} dias de sua constituição formal na Receita Federal."
+                )
+                stat_summary = (
+                    f"Emissão de despesa pública de relevância material com apenas {age_days} dias decorridos desde o registro cadastral, "
+                    f"abaixo do parâmetro de triagem de {max_age_days} dias."
+                )
+                scope_limit = (
+                    "A emissão de nota fiscal por sociedade recém-constituída atende aos preceitos da liberdade de iniciativa. "
+                    "O tempo decorrido desde a constituição cadastral constitui parâmetro de risco operacional, não implicando "
+                    "impropriedade ou inexecução do serviço faturado."
+                )
+                sig_id = f"SIG-REC-EXP-{compute_sha256_text(f'{exp.natural_key}:{company.cnpj_normalized}:{age_days}')[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-CORP-RECENT-CREATION",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                        metric_name="company_age_days_at_contract",
+                        metric_value=Decimal(str(age_days)),
+                        threshold_value=Decimal(str(max_age_days)),
+                        audited_amount=amount,
+                        provenance_hashes=hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    return signals
+
+
+def evaluate_low_capital_outlier_rule(
+    companies: Sequence[CuratedCompanyRegistrationRecord],
+    expenses: Sequence[CuratedPublicExpense] | None = None,
+    contracts: Sequence[CuratedPublicContract] | None = None,
+    max_ratio_threshold: Decimal = Decimal("50.00"),
+    min_amount_threshold: Decimal = Decimal("100000.00"),
+) -> list[AuditSignal]:
+    """Identifica contratações ou despesas com montante desproporcional ao capital social declarado (>= 50x) (SPEC-0014).
+
+    Código da Regra: R-CORP-LOW-CAPITAL-OUTLIER
+    """
+    if not companies or (not expenses and not contracts):
+        return []
+
+    company_by_cnpj: dict[str, CuratedCompanyRegistrationRecord] = {
+        c.cnpj_normalized: c for c in companies if c.share_capital_brl > Decimal("0.00")
+    }
+    company_by_root: dict[str, CuratedCompanyRegistrationRecord] = {
+        c.corporate_root_cnpj: c for c in companies if c.share_capital_brl > Decimal("0.00")
+    }
+
+    signals: list[AuditSignal] = []
+
+    # 1. Contratos
+    if contracts:
+        for contract in contracts:
+            if contract.current_amount < min_amount_threshold:
+                continue
+            sup_doc = contract.supplier_doc_normalized
+            company = company_by_cnpj.get(sup_doc) or company_by_root.get(sup_doc[:8])
+            if not company or company.share_capital_brl <= Decimal("0.00"):
+                continue
+            ratio = contract.current_amount / company.share_capital_brl
+            if ratio >= max_ratio_threshold:
+                clean_organ = sanitize_untrusted_text(contract.organ_name, 100)
+                clean_supplier = sanitize_untrusted_text(company.legal_name, 120)
+                amount = contract.current_amount
+                hashes = tuple(sorted({company.provenance.raw_batch_sha256, contract.provenance.raw_batch_sha256}))
+                title = f"Contrato público com razão atípica sobre o capital social ({ratio:.1f}x) em {clean_organ}"
+                fact_summary = (
+                    f"A empresa {clean_supplier} ({company.cnpj_normalized}), com capital social declarado de "
+                    f"R$ {company.share_capital_brl:.2f}, celebrou contrato de R$ {amount:.2f} com {clean_organ}, "
+                    f"equivalente a {ratio:.1f} vezes o patrimônio líquido inicial informado."
+                )
+                stat_summary = (
+                    f"A razão entre o montante contratado e o capital social ({ratio:.1f}x) supera o limiar "
+                    f"de referência de {max_ratio_threshold:.1f}x para triagem de risco de capacidade econômico-financeira."
+                )
+                scope_limit = (
+                    "A legislação de licitações (Lei nº 14.133/2021) permite a comprovação de qualificação financeira "
+                    "por índices contábeis de liquidez ou garantias contratuais alternativas. A razão elevada não constitui "
+                    "superfaturamento ou vício formal, refletindo apenas indicador de análise de risco preventivo."
+                )
+                sig_id = f"SIG-CAP-CTR-{compute_sha256_text(f'{contract.pncp_control_number}:{company.cnpj_normalized}:{ratio:.2f}')[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-CORP-LOW-CAPITAL-OUTLIER",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                        metric_name="contract_to_share_capital_ratio",
+                        metric_value=ratio.quantize(Decimal("0.01")),
+                        threshold_value=max_ratio_threshold,
+                        audited_amount=amount,
+                        provenance_hashes=hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    # 2. Despesas agregadas por fornecedor
+    if expenses:
+        exp_by_supplier: dict[str, list[CuratedPublicExpense]] = defaultdict(list)
+        for exp in expenses:
+            exp_by_supplier[exp.supplier_doc_normalized].append(exp)
+
+        for sup_doc, items in exp_by_supplier.items():
+            total_exp = sum(e.net_amount for e in items)
+            if total_exp < min_amount_threshold:
+                continue
+            company = company_by_cnpj.get(sup_doc) or company_by_root.get(sup_doc[:8])
+            if not company or company.share_capital_brl <= Decimal("0.00"):
+                continue
+            ratio = total_exp / company.share_capital_brl
+            if ratio >= max_ratio_threshold:
+                clean_organ = sanitize_untrusted_text(items[0].organ_name, 100)
+                clean_supplier = sanitize_untrusted_text(company.legal_name, 120)
+                hashes = tuple(
+                    sorted({company.provenance.raw_batch_sha256} | {e.provenance.raw_batch_sha256 for e in items})
+                )
+                title = f"Volume acumulado de pagamentos com razão atípica sobre o capital social ({ratio:.1f}x) em {clean_organ}"
+                fact_summary = (
+                    f"A empresa {clean_supplier} ({company.cnpj_normalized}), com capital social de R$ {company.share_capital_brl:.2f}, "
+                    f"acumulou R$ {total_exp:.2f} em pagamentos públicos ({len(items)} despesas) de {clean_organ}, "
+                    f"atingindo {ratio:.1f} vezes o capital registrado."
+                )
+                stat_summary = (
+                    f"A relação entre despesas empenhadas e capital integralizado ({ratio:.1f}x) excede o patamar "
+                    f"analítico de {max_ratio_threshold:.1f}x para acompanhamento de capacidade operacional."
+                )
+                scope_limit = (
+                    "Empresas de prestação de serviços continuados sem demanda intensiva em capital fixo podem legitimamente "
+                    "faturar montantes desproporcionais ao seu capital social original, sendo o fluxo de caixa sustentado "
+                    "pelas medições contratuais periódicas."
+                )
+                sig_id = f"SIG-CAP-EXP-{compute_sha256_text(f'{items[0].organ_code}:{company.cnpj_normalized}:{ratio:.2f}')[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-CORP-LOW-CAPITAL-OUTLIER",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.STATISTICAL_ANOMALY,
+                        metric_name="contract_to_share_capital_ratio",
+                        metric_value=ratio.quantize(Decimal("0.01")),
+                        threshold_value=max_ratio_threshold,
+                        audited_amount=total_exp,
+                        provenance_hashes=hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    return signals
+
 
