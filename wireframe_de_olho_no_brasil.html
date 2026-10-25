@@ -635,10 +635,10 @@
             Visão geral
           </button>
           <button type="button" class="nav-item" data-nav="list">
-            Explorador <span class="nav-count">18 Regras</span>
+            Explorador <span class="nav-count">20 Regras</span>
           </button>
           <button type="button" class="nav-item" data-nav="detail">
-            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">18</span>
+            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">20</span>
           </button>
           <button type="button" class="nav-item" data-nav="inbox">
             Direito de resposta <span class="nav-count">4</span>
@@ -657,7 +657,7 @@
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
-          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 18 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
+          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
         </div>
         <div class="head-actions">
           <div class="seg" role="tablist" aria-label="Exercício fiscal">
@@ -690,8 +690,8 @@
           <div class="kpi">
             <div class="kpi-label">Regras de auditoria ativas</div>
             <div class="kpi-row">
-              <span class="kpi-value">18 regras</span>
-              <span class="delta down">18 dossiês</span>
+              <span class="kpi-value">20 regras</span>
+              <span class="delta down">20 dossiês</span>
             </div>
             <div class="kpi-sub">Triagem Laya ONNX (System 1)</div>
           </div>
@@ -801,12 +801,12 @@
                 <span class="kv-val">42.850 docs · 100,0%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (18 Regras)</span>
+                <span class="kv-label">2. [INFERÊNCIA ESTATÍSTICA] (20 Regras)</span>
                 <span class="kv-val">312 sinais · 0,73%</span>
               </div>
               <div class="kv-row">
                 <span class="kv-label">3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO]</span>
-                <span class="kv-val">18 dossiês em curadoria · 0,04%</span>
+                <span class="kv-val">20 dossiês em curadoria · 0,04%</span>
               </div>
             </div>
 
@@ -819,10 +819,10 @@
           <article class="card card-flush">
             <div class="card-head">
               <div>
-                <h2 class="card-title">Sinais matemáticos prioritários (18 Regras)</h2>
+                <h2 class="card-title">Sinais matemáticos prioritários (20 Regras)</h2>
                 <div class="card-meta">Triagem Laya ONNX + regras determinísticas</div>
               </div>
-              <button type="button" class="btn" data-nav="list">Ver todas as 18</button>
+              <button type="button" class="btn" data-nav="list">Ver todas as 20</button>
             </div>
 
             <div class="table-wrap">
@@ -891,17 +891,18 @@
         <article class="card card-flush">
           <div class="toolbar">
             <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
-              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (18)</button>
+              <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (20)</button>
               <button type="button" role="tab" aria-selected="false" data-source="PNCP">PNCP Contratos</button>
               <button type="button" role="tab" aria-selected="false" data-source="CGU">CGU Transparência</button>
               <button type="button" role="tab" aria-selected="false" data-source="CEAP">Câmara / Senado</button>
               <button type="button" role="tab" aria-selected="false" data-source="TSE">TSE Eleições</button>
-              <button type="button" role="tab" aria-selected="false" data-source="RFB">Receita Federal (QSA / CNPJ)</button>
+              <button type="button" role="tab" aria-selected="false" data-source="RFB">Receita Federal (QSA / CNAE)</button>
+              <button type="button" role="tab" aria-selected="false" data-source="TRANSP">Portal Transparência (Servidores)</button>
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <select class="select" id="explorer-rule-select" aria-label="Filtrar por categoria de regra">
-                <option value="all">Todas as Categorias (18 Regras)</option>
+                <option value="all">Todas as Categorias (20 Regras)</option>
                 <option value="Sobrecusto & Catálogo">Sobrecusto & Catálogo (Z-Score)</option>
                 <option value="Concentração & Monopólio">Concentração & Monopólio (HHI/80%)</option>
                 <option value="Cota Parlamentar">Cota Parlamentar (CEAP Outlier)</option>
@@ -914,6 +915,8 @@
                 <option value="Eleitoral TSE">Eleitoral TSE (Doação e Fornecimento)</option>
                 <option value="Quadro Societário & QSA">Quadro Societário & QSA (Sócios & Doações)</option>
                 <option value="Risco Cadastral & Capital">Risco Cadastral & Capital (Abertura & Capital)</option>
+                <option value="Incompatibilidade CNAE">Incompatibilidade Econômica (CNAE vs Objeto)</option>
+                <option value="Conflito de Interesses">Conflito de Interesses (Servidor no QSA)</option>
               </select>
 
               <input type="search" class="input" id="explorer-filter-input" placeholder="Buscar favorecido, regra ou CNPJ" aria-label="Buscar favorecido, regra ou CNPJ">
@@ -938,9 +941,9 @@
               <tbody id="explorer-tbody"></tbody>
               <tfoot>
                 <tr>
-                  <td colspan="6" id="explorer-foot-label">Soma conciliada dos registros exibidos (14 documentos)</td>
-                  <td class="n" id="explorer-foot-score">0,83 méd.</td>
-                  <td class="n money" id="explorer-foot-total">R$ 4.154.750,00</td>
+                  <td colspan="6" id="explorer-foot-label">Soma conciliada dos registros exibidos (20 documentos)</td>
+                  <td class="n" id="explorer-foot-score">0,85 méd.</td>
+                  <td class="n money" id="explorer-foot-total">R$ 5.634.750,00</td>
                 </tr>
               </tfoot>
             </table>
@@ -1843,6 +1846,60 @@
         chartLabels: ['Valor Contratado', 'Capital Declarado', 'Média Capital', 'Limite 50x'],
         chartValues: [250, 2, 50, 100],
         chartCompare: [100, 2, 50, 100]
+      },
+      {
+        id: 'DONB-2026-0160',
+        date: '04/10/2026',
+        source: 'RFB',
+        ruleCode: 'R-CORP-CNAE-INCOMPATIBLE',
+        category: 'Incompatibilidade CNAE',
+        org: 'Ministério dos Transportes · DNIT',
+        fav: 'Comércio Varejista Alpha Vestuário Ltda.',
+        doc: '11.222.333/0001-81',
+        hash: '5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e',
+        secHash: '6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f',
+        epistemic: 'Anomalia Estatística (CNAE Incompatível)',
+        pill: 'warn',
+        score: 0.88,
+        cents: 38000000,
+        parquetPath: 'r2://donb-raw/2026/10/rfb_cnae_0160.parquet',
+        metricName: 'Divisões CNAE Compatíveis com o Objeto',
+        metricVal: '0 divisões (Incompatível)',
+        thresholdVal: '≥ 1 divisão compatível',
+        benchmarkVal: 'CNAE Divisão 42 (Obras Infraestrutura)',
+        officialSummary: 'Contrato firmado no valor de R$ 380.000,00 com Comércio Varejista Alpha Vestuário Ltda. (CNPJ 11.222.333/0001-81) para pavimentação e drenagem urbana. A empresa possui CNAE principal 4781400 (vestuário) e nenhum CNAE secundário na construção pesada.',
+        statisticalSummary: 'Incompatibilidade material determinística entre os ramos econômicos declarados perante a Receita Federal e o objeto licitado de engenharia pesada, em contrato com valor superior ao limiar de R$ 50.000,00.',
+        limitationSummary: 'A CNAE tem finalidade prioritariamente tributária e cadastral perante a administração pública. A divergência cadastral não comprova incapacidade técnica nem nulidade contratual, podendo haver atestados comprobatórios ou alteração cadastral em tramitação.',
+        chartLabels: ['Divisão 42 (Obras)', 'Divisão 43 (Serviços)', 'Divisão 47 (Comércio)', 'Aderência'],
+        chartValues: [0, 0, 100, 0],
+        chartCompare: [100, 100, 0, 100]
+      },
+      {
+        id: 'DONB-2026-0161',
+        date: '03/10/2026',
+        source: 'TRANSP',
+        ruleCode: 'R-CROSS-PUBLIC-AGENT-SUPPLIER',
+        category: 'Conflito de Interesses',
+        org: 'Ministério da Saúde · UASG 250005',
+        fav: 'Mendes & Ribeiro Soluções em Saúde Ltda.',
+        doc: '11.222.333/0001-81',
+        hash: '7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a',
+        secHash: '8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b',
+        epistemic: 'Divergência entre Registros (Impedimento Art. 9º)',
+        pill: 'warn',
+        score: 0.94,
+        cents: 45000000,
+        parquetPath: 'r2://donb-raw/2026/10/transp_qsa_servidor_0161.parquet',
+        metricName: 'Valor Contratado com Fornecedor Vinculado',
+        metricVal: 'R$ 450.000,00',
+        thresholdVal: 'R$ 0,00 (Vedação Art. 9º)',
+        benchmarkVal: 'Mesmo Órgão (UASG 250005)',
+        officialSummary: 'A servidora pública Mariana Souza Alcantara (CPF ***.847.291-**, cargo: Analista de Planejamento), lotada no Ministério da Saúde, figura como sócia-administradora no QSA da empresa contratada Mendes & Ribeiro Soluções em Saúde Ltda. (CNPJ 11.222.333/0001-81) no valor de R$ 450.000,00.',
+        statisticalSummary: 'Cruzamento determinístico multicritério entre cadastro oficial de agentes públicos federais (Portal da Transparência), Quadro de Sócios e Administradores (QSA/Receita Federal) e contratações públicas do próprio órgão de lotação funcional.',
+        limitationSummary: 'O art. 9º, § 1º da Lei nº 14.133/2021 e a Súmula TCU nº 269 vedam a participação direta ou indireta de agentes públicos do órgão licitante. O art. 117, X da Lei 8.112/1990 veda gerência societária, admitindo condição de cotista sem poder de gestão. A indicação nominal exige apuração preliminar formal antes de qualquer imputação.',
+        chartLabels: ['Contrato Órgão', 'Média Fornecedor', 'Teto Dispensa', 'Vínculo QSA'],
+        chartValues: [450, 150, 100, 100],
+        chartCompare: [150, 150, 100, 0]
       }
     ];
 
@@ -1979,18 +2036,18 @@
       document.getElementById('explorer-foot-total').textContent = fmtBRL(sumCents);
 
       if (activeSource === 'all' && activeCategory === 'all' && !q) {
-        console.assert(sumCents === 480475000, 'Soma de todas as 18 regras deve fechar exatamente em R$ 4.804.750,00');
-        console.assert(filtered.length === 18, 'Total de regras auditadas deve ser exatamente 18');
+        console.assert(sumCents === 563475000, 'Soma de todas as 20 regras deve fechar exatamente em R$ 5.634.750,00');
+        console.assert(filtered.length === 20, 'Total de regras auditadas deve ser exatamente 20');
       }
     }
 
     const SCREEN_META = {
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 18 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
       },
       list: {
-        title: 'Explorador de despesas, contratos e sinais (18 Regras)',
+        title: 'Explorador de despesas, contratos e sinais (20 Regras)',
         sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
       },
       detail: {
