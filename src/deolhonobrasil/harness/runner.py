@@ -97,6 +97,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0010-duplicate-and-overlap-expenses", "data-model.md"),
         ("SPEC-0011-temporal-recess-and-holiday-expenses", "data-model.md"),
         ("SPEC-0012-electoral-campaign-donations", "data-model.md"),
+        ("SPEC-0013-corporate-members-and-qsa-crossmatch", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:
@@ -203,6 +204,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
     from deolhonobrasil.governance.dossiers import AuditDossier, VerifiableEvidenceBundle
     from deolhonobrasil.governance.right_of_reply import RightOfReplySubmission
     from deolhonobrasil.pipeline.models import (
+        CuratedCorporateMemberRecord,
         CuratedElectoralDonation,
         CuratedParliamentaryAmendment,
         CuratedPublicContract,
@@ -218,6 +220,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         CuratedParliamentaryAmendment,
         CuratedSanctionRecord,
         CuratedElectoralDonation,
+        CuratedCorporateMemberRecord,
         AuditSignal,
         System1Decision,
         GroundedDossierSection,

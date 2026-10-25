@@ -21,15 +21,15 @@ class TestLoopEngineeringHarness(unittest.TestCase):
     def test_openspec_traceability_gate_passes_and_resolves_anchors(self) -> None:
         result = verify_openspec_traceability(REPO_ROOT)
         self.assertTrue(result.passed, f"SDD Spec violations: {result.violations}")
-        self.assertEqual(result.metrics["capabilities_checked"], 12)
-        self.assertEqual(result.metrics["sdd_artifacts_verified"], 72)
-        self.assertGreaterEqual(int(result.metrics["unique_requirements"]), 45)
-        self.assertGreaterEqual(int(result.metrics["verified_test_anchors"]), 60)
+        self.assertEqual(result.metrics["capabilities_checked"], 13)
+        self.assertEqual(result.metrics["sdd_artifacts_verified"], 78)
+        self.assertGreaterEqual(int(result.metrics["unique_requirements"]), 48)
+        self.assertGreaterEqual(int(result.metrics["verified_test_anchors"]), 64)
 
     def test_gateguard_boundaries_confirm_frozen_entities_and_eval_files(self) -> None:
         result = verify_gateguard_boundaries(REPO_ROOT)
         self.assertTrue(result.passed, f"GateGuard violations: {result.violations}")
-        self.assertEqual(result.metrics["frozen_domain_entities_verified"], 12)
+        self.assertEqual(result.metrics["frozen_domain_entities_verified"], 13)
         self.assertEqual(result.metrics["eval_definitions_verified"], 4)
 
     def test_wireframe_passes_achromatic_ledger_structural_invariants(self) -> None:

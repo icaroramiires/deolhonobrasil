@@ -31,6 +31,7 @@ class OfficialSource(StrEnum):
     CGU_CEIS_CNEP = "CGU_CEIS_CNEP"
     PNCP_CONTRATOS = "PNCP_CONTRATOS"
     RFB_CNPJ = "RFB_CNPJ"
+    RECEITA_FEDERAL_CNPJ = "RECEITA_FEDERAL_CNPJ"
     IBGE_LOCALIDADES = "IBGE_LOCALIDADES"
     TSE_ELEICOES = "TSE_ELEICOES"
 
@@ -475,6 +476,42 @@ class CuratedElectoralDonation:
             receipt_number=clean_receipt,
             provenance=provenance,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class CuratedCorporateMemberRecord:
+    """Quadro de Sócios e Administradores (QSA) da Receita Federal (SPEC-0013 / FR-028 / DATA-015)."""
+
+    corporate_root_cnpj: str
+    full_cnpj_normalized: str
+    member_name_raw: str
+    member_doc_masked: str
+    qualification_code: str
+    qualification_description: str
+    entry_date: date | str | None
+    provenance: ProvenanceMetadata
+    natural_key: str = field(default="")
+
+    def __post_init__(self) -> None:
+        clean_root = (self.corporate_root_cnpj or "").strip().replace(".", "").replace("/", "").replace("-", "")
+        if not clean_root or len(clean_root) != 8 or not clean_root.isdigit():
+            raise ValueError(f"corporate_root_cnpj deve conter exatamente 8 dígitos numéricos: '{self.corporate_root_cnpj}'")
+        clean_name = sanitize_untrusted_text(self.member_name_raw, 250)
+        if not clean_name:
+            raise ValueError("member_name_raw é obrigatório.")
+        clean_doc = sanitize_untrusted_text(self.member_doc_masked, 50)
+        if not clean_doc:
+            raise ValueError("member_doc_masked é obrigatório.")
+        clean_qual = sanitize_untrusted_text(self.qualification_description, 100) or "Sócio"
+        object.__setattr__(self, "corporate_root_cnpj", clean_root)
+        object.__setattr__(self, "member_name_raw", clean_name)
+        object.__setattr__(self, "member_doc_masked", clean_doc)
+        object.__setattr__(self, "qualification_description", clean_qual)
+        if not self.natural_key:
+            nk = compute_sha256_text(
+                f"{self.provenance.source.value}|{clean_root}|{clean_doc}|{clean_name}"
+            )
+            object.__setattr__(self, "natural_key", nk)
 
 
 @dataclass(frozen=True, slots=True)

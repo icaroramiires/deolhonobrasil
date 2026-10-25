@@ -21,6 +21,7 @@ from deolhonobrasil.audit.statistics import (
     evaluate_benford_first_digit,
 )
 from deolhonobrasil.pipeline.models import (
+    CuratedCorporateMemberRecord,
     CuratedElectoralDonation,
     CuratedParliamentaryAmendment,
     CuratedPublicContract,
@@ -1176,3 +1177,180 @@ def evaluate_electoral_donor_supplier_crossmatch_rule(
         )
 
     return signals
+
+
+def evaluate_qsa_shared_partner_rule(
+    organ_code: str,
+    organ_name: str,
+    expenses: Sequence[CuratedPublicExpense],
+    qsa_records: Sequence[CuratedCorporateMemberRecord],
+    min_suppliers_count: int = 2,
+) -> AuditSignal | None:
+    """Identifica sócios administradores comuns em fornecedores distintos contratados pelo mesmo órgão (SPEC-0013).
+
+    Código da Regra: R-CROSS-QSA-SHARED-PARTNER
+    """
+    if not expenses or not qsa_records:
+        return None
+
+    supplier_expenses: dict[str, list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in expenses:
+        if exp.organ_code == organ_code and exp.net_amount > Decimal("0"):
+            root = extract_cnpj_root(exp.supplier_doc_normalized)
+            if root is not None:
+                supplier_expenses[exp.supplier_doc_normalized].append(exp)
+
+    if len(supplier_expenses) < min_suppliers_count:
+        return None
+
+    partner_to_suppliers: dict[tuple[str, str], set[str]] = defaultdict(set)
+    partner_qsa_map: dict[tuple[str, str], list[CuratedCorporateMemberRecord]] = defaultdict(list)
+
+    for qsa in qsa_records:
+        for sup_doc in supplier_expenses:
+            root = extract_cnpj_root(sup_doc)
+            if qsa.corporate_root_cnpj == root or qsa.full_cnpj_normalized == sup_doc:
+                key = (qsa.member_name_raw.strip(), qsa.member_doc_masked.strip())
+                partner_to_suppliers[key].add(sup_doc)
+                partner_qsa_map[key].append(qsa)
+
+    for (p_name, p_doc), sup_set in partner_to_suppliers.items():
+        if len(sup_set) >= min_suppliers_count:
+            affected_expenses: list[CuratedPublicExpense] = []
+            for s_doc in sup_set:
+                affected_expenses.extend(supplier_expenses[s_doc])
+
+            total_amount = sum(e.net_amount for e in affected_expenses)
+            qsa_recs = partner_qsa_map[(p_name, p_doc)]
+            hashes = set(q.provenance.raw_batch_sha256 for q in qsa_recs) | set(
+                e.provenance.raw_batch_sha256 for e in affected_expenses
+            )
+
+            clean_organ = sanitize_untrusted_text(organ_name, 100)
+            clean_partner = sanitize_untrusted_text(p_name, 100)
+            suppliers_desc = ", ".join(sorted(sup_set))
+
+            title = f"Sócio comum identificado em múltiplos fornecedores contratados por {clean_organ}"
+            fact_summary = (
+                f"O sócio {clean_partner} ({p_doc}) consta no QSA de {len(sup_set)} fornecedores distintos "
+                f"({suppliers_desc}) que receberam pagamentos de {clean_organ} totalizando R$ {total_amount:.2f}."
+            )
+            stat_summary = (
+                f"Convergência societária cadastral identificada via base do CNPJ da Receita Federal em {len(sup_set)} "
+                f"pessoas jurídicas contratadas pelo mesmo órgão com R$ {total_amount:.2f} despendidos."
+            )
+            scope_limit = (
+                "A participação societária em múltiplos empreendimentos econômicos é permitida pela legislação brasileira. "
+                "A identificação de sócio administrador comum em fornecedores não configura conluio ou infração automática, "
+                "podendo refletir grupos societários estruturados em ramos econômicos correlatos."
+            )
+
+            sig_id = f"SIG-QSA-SHR-{compute_sha256_text(f'{organ_code}:{p_name}:{p_doc}')[:16]}"
+            return AuditSignal(
+                signal_id=sig_id,
+                rule_code="R-CROSS-QSA-SHARED-PARTNER",
+                title=title,
+                official_fact_summary=fact_summary,
+                statistical_inference_summary=stat_summary,
+                scope_limitation_summary=scope_limit,
+                epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                metric_name="shared_partner_suppliers_count",
+                metric_value=Decimal(str(len(sup_set))),
+                threshold_value=Decimal(str(min_suppliers_count)),
+                audited_amount=total_amount,
+                provenance_hashes=tuple(sorted(hashes)),
+                requires_human_review=True,
+            )
+
+    return None
+
+
+def evaluate_qsa_individual_donor_rule(
+    public_agent_id: str,
+    expenses: Sequence[CuratedPublicExpense],
+    qsa_records: Sequence[CuratedCorporateMemberRecord],
+    donations: Sequence[CuratedElectoralDonation],
+) -> AuditSignal | None:
+    """Identifica doação eleitoral de pessoa física (sócio no QSA) para a campanha do mandatário contratante (SPEC-0013).
+
+    Código da Regra: R-CROSS-QSA-DONOR-SUPPLIER
+    """
+    if not expenses or not qsa_records or not donations:
+        return None
+
+    agent_expenses = [e for e in expenses if e.public_agent_id == public_agent_id and e.net_amount > Decimal("0")]
+    if not agent_expenses:
+        return None
+
+    supplier_expenses: dict[str, list[CuratedPublicExpense]] = defaultdict(list)
+    for exp in agent_expenses:
+        supplier_expenses[exp.supplier_doc_normalized].append(exp)
+
+    agent_donations = [d for d in donations if d.candidate_id == public_agent_id and d.donation_amount > Decimal("0")]
+    if not agent_donations:
+        return None
+
+    donation_map: dict[tuple[str, str], list[CuratedElectoralDonation]] = defaultdict(list)
+    for don in agent_donations:
+        donation_map[(don.donor_name.strip().upper(), don.donor_doc_normalized.strip())].append(don)
+
+    for sup_doc, exp_items in supplier_expenses.items():
+        root = extract_cnpj_root(sup_doc)
+        if root is None:
+            continue
+
+        matching_qsa = [q for q in qsa_records if q.corporate_root_cnpj == root or q.full_cnpj_normalized == sup_doc]
+        for qsa in matching_qsa:
+            qsa_key = (qsa.member_name_raw.strip().upper(), qsa.member_doc_masked.strip())
+            if qsa_key in donation_map:
+                don_items = donation_map[qsa_key]
+                total_donation = sum(d.donation_amount for d in don_items)
+                total_expense = sum(e.net_amount for e in exp_items)
+
+                clean_agent = sanitize_untrusted_text(exp_items[0].public_agent_name, 100)
+                clean_partner = sanitize_untrusted_text(qsa.member_name_raw, 100)
+                clean_supplier = sanitize_untrusted_text(exp_items[0].supplier_name, 120)
+
+                triple_hashes = tuple(
+                    sorted(
+                        {qsa.provenance.raw_batch_sha256}
+                        | {e.provenance.raw_batch_sha256 for e in exp_items}
+                        | {d.provenance.raw_batch_sha256 for d in don_items}
+                    )
+                )
+
+                title = f"Sócio de fornecedor público identificado como doador de campanha eleitoral de {clean_agent}"
+                fact_summary = (
+                    f"O sócio {clean_partner} ({qsa.member_doc_masked}) do fornecedor {clean_supplier} ({sup_doc}) "
+                    f"realizou doação eleitoral declarada de R$ {total_donation:.2f} para a campanha de {clean_agent} ({public_agent_id}), "
+                    f"tendo o fornecedor recebido R$ {total_expense:.2f} em pagamentos públicos do mandatário."
+                )
+                stat_summary = (
+                    f"Cruzamento triplo entre quadro societário da Receita Federal (QSA), despesas públicas ({sup_doc}) "
+                    f"e prestação de contas eleitorais de pessoa física no TSE vinculadas ao mandatário."
+                )
+                scope_limit = (
+                    "Doações eleitorais declaradas por pessoas físicas e a contratação de pessoas jurídicas de fornecimento são atos "
+                    "legalmente autorizados. A realização de doação de campanha como pessoa física dentro dos limites legais e a contratação "
+                    "do fornecedor não presumem favorecimento indevido ou desvio de finalidade."
+                )
+
+                sig_id = f"SIG-QSA-DON-{compute_sha256_text(f'{public_agent_id}:{sup_doc}:{qsa.member_doc_masked}')[:16]}"
+                return AuditSignal(
+                    signal_id=sig_id,
+                    rule_code="R-CROSS-QSA-DONOR-SUPPLIER",
+                    title=title,
+                    official_fact_summary=fact_summary,
+                    statistical_inference_summary=stat_summary,
+                    scope_limitation_summary=scope_limit,
+                    epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                    metric_name="individual_partner_donation_amount_brl",
+                    metric_value=total_donation,
+                    threshold_value=Decimal("0.00"),
+                    audited_amount=total_expense,
+                    provenance_hashes=triple_hashes,
+                    requires_human_review=True,
+                )
+
+    return None
+
