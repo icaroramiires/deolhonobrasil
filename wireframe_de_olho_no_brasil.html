@@ -6,41 +6,86 @@
   <title>De Olho no Brasil · Rastreabilidade Cívica e Auditoria Assistida</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* tasteskill · achromatic-ledger (seed 2125632542) · shell: no-sidebar */
+    /* De Olho no Brasil · Design System Handoff (docs/design/design-tokens.json) */
     :root {
-      --ground: #f2f4f7;
+      --background: #f5f7f6;
+      --ground: #f5f7f6;
       --surface: #ffffff;
-      --raised: #e8ecf2;
-      --border: #e3e7ed;
-      --rule: #edf0f5;
-      --control: #cfd5df;
-      --text: #0a0a0a;
-      --muted: #59606a;
-      --accent: #141414;
-      --pos: #1b6e23;
-      --pos-bg: #dcfae5;
-      --pos-fg: #04250e;
+      --surface-subtle: #f0f4f2;
+      --text: #15231f;
+      --text-muted: #66736f;
+      --border: #dce4e1;
+      --brand: #12654c;
+      --brand-strong: #0b4c39;
+      --brand-soft: #e3f2ec;
+      --accent: #d3f05b;
+      --warning: #a55b12;
+      --warning-soft: #fff2dc;
+      --info: #265b9b;
+      --info-soft: #eaf2fc;
+      --raised: #eef3f1;
+      --rule: #e5ece9;
+      --control: #c8d4cf;
+      --pos: #12654c;
+      --pos-bg: #e3f2ec;
+      --pos-fg: #0b4c39;
       --neg: #a81b20;
       --neg-bg: #ffedea;
       --neg-fg: #831c1e;
-      --warn: #80360a;
-      --warn-bg: #fffbeb;
-      --warn-fg: #80360a;
+      --warn: #a55b12;
+      --warn-bg: #fff2dc;
+      --warn-fg: #a55b12;
       --neu-bg: #eeeeee;
       --neu-fg: #303030;
-      --chart-1: #141414;
-      --chart-2: #8a8a8a;
-      --chart-3: #1d5fbf;
-      --chart-4: #b0b7c3;
-      --radius-card: 8px;
-      --radius-control: 6px;
+      --chart-1: #12654c;
+      --chart-2: #66736f;
+      --chart-3: #265b9b;
+      --chart-4: #a55b12;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-card: 10px;
+      --radius-control: 8px;
+      --radius-pill: 999px;
       --row-h: 44px;
       --ctrl-h: 36px;
       --gap: 12px;
       --pad: 24px;
-      --font: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: "Manrope", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    [data-theme="dark"] {
+      --background: #0e1714;
+      --ground: #0e1714;
+      --surface: #14201c;
+      --surface-subtle: #1a2924;
+      --text: #edf4f1;
+      --text-muted: #a3b2ad;
+      --border: #293b35;
+      --brand: #61c29f;
+      --brand-strong: #8ae4c4;
+      --brand-soft: #193b30;
+      --accent: #d3f05b;
+      --warning: #d97706;
+      --warning-soft: #2e1d05;
+      --info: #60a5fa;
+      --info-soft: #172554;
+      --raised: #1a2924;
+      --rule: #23342e;
+      --control: #384e46;
+      --pos: #61c29f;
+      --pos-bg: #193b30;
+      --pos-fg: #edf4f1;
+      --neu-bg: #1a2924;
+      --neu-fg: #edf4f1;
+      --chart-1: #61c29f;
+      --chart-2: #a3b2ad;
+      --chart-3: #60a5fa;
+      --chart-4: #d97706;
     }
 
     *, *::before, *::after {
@@ -204,11 +249,28 @@
       text-decoration: none;
       white-space: nowrap;
     }
-    .btn:hover { background: var(--raised); }
+    /* Skip link for keyboard accessibility (WCAG 2.2 AA) */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 16px;
+      background: var(--brand-strong);
+      color: #ffffff;
+      padding: 8px 16px;
+      z-index: 100;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-weight: 600;
+      transition: top 0.15s ease-in-out;
+    }
+    .skip-link:focus {
+      top: 12px;
+    }
     .btn-primary {
       background: var(--accent);
-      color: var(--surface);
+      color: var(--brand-strong);
       border-color: var(--accent);
+      font-weight: 600;
     }
     .btn-primary:hover { opacity: 0.92; background: var(--accent); }
     .btn-secondary-pill {
@@ -485,6 +547,84 @@
     .pill.warn { background: var(--warn-bg); color: var(--warn-fg); }
     .pill.neu { background: var(--neu-bg); color: var(--neu-fg); }
 
+    /* Epistemic Badges (docs/design/design-system.md) */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .badge-fact { background: var(--info-soft); color: var(--info); border: 1px solid var(--info); }
+    .badge-divergence { background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-unusual { background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-hypothesis { background: var(--surface-subtle); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-reviewed { background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand); }
+
+    /* AI Limit & Governance Banner */
+    .ai-banner {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface-subtle) 100%);
+      border-left: 4px solid var(--brand);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      border-radius: var(--radius-card);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .ai-banner h3 {
+      margin: 0 0 6px 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--brand);
+      font-family: var(--font-display);
+    }
+    .ai-banner p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Required Interaction States (docs/design/screens.md) */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-subtle) 25%, var(--raised) 50%, var(--surface-subtle) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.6s infinite ease-in-out;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+    @keyframes skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .state-empty, .state-error, .state-unauthorized {
+      padding: 32px 20px;
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-card);
+      margin: 12px 0;
+    }
+    .state-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .state-desc { color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 0 auto 14px; }
+    .state-incomplete, .state-unavailable {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-control);
+      font-size: 12px;
+      background: var(--warning-soft);
+      color: var(--warning);
+      border: 1px solid var(--border);
+    }
+
     /* Charts */
     .chart { width: 100%; height: auto; display: block; overflow: visible; }
     .chart text {
@@ -613,9 +753,124 @@
       }
       .page-head h1 { font-size: 22px; }
     }
+    /* Design System: Epistemic Badges & Classifications */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .badge-fact { background: #eaf2fc; color: #265b9b; border: 1px solid #bfdbfe; }
+    .badge-divergence { background: #fff2dc; color: #a55b12; border: 1px solid #fed7aa; }
+    .badge-unusual { background: #fff2dc; color: #a55b12; border: 1px solid #fed7aa; }
+    .badge-hypothesis { background: #eeeeee; color: #424242; border: 1px solid #d4d4d4; }
+    .badge-reviewed { background: #e3f2ec; color: #0b4c39; border: 1px solid #a7f3d0; }
+
+    [data-theme="dark"] .badge-fact { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
+    [data-theme="dark"] .badge-divergence, [data-theme="dark"] .badge-unusual { background: #2e1d05; color: #fcd34d; border-color: #78350f; }
+    [data-theme="dark"] .badge-hypothesis { background: #1f2937; color: #d1d5db; border-color: #374151; }
+    [data-theme="dark"] .badge-reviewed { background: #193b30; color: #8ae4c4; border-color: #064e3b; }
+
+    /* AI Banner (Mandatory Limitation Notice) */
+    .ai-banner {
+      background: var(--brand-soft);
+      border: 1px solid var(--brand);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    .ai-banner-content {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .ai-banner strong {
+      color: var(--brand-strong);
+    }
+    [data-theme="dark"] .ai-banner strong {
+      color: var(--brand);
+    }
+
+    /* Epistemic Badges Legend */
+    .epistemic-badges-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 16px;
+    }
+
+    /* Epistemic Layers Block */
+    .epistemic-layers-block {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .layer-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 14px 16px;
+    }
+    .layer-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--raised);
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .layer-item p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Interaction State Banners */
+    .state-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .skeleton {
+      background: linear-gradient(90deg, var(--raised) 25%, var(--rule) 50%, var(--raised) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .state-empty, .state-error, .state-incomplete, .state-unavailable, .state-forbidden {
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .state-empty { color: var(--text-muted); text-align: center; }
+    .state-error { background: var(--neg-bg); color: var(--neg-fg); border-color: #fca5a5; }
+    .state-incomplete { background: var(--warning-soft); color: var(--warning); border-color: var(--warning); }
+    .state-unavailable { background: var(--warning-soft); color: var(--warning); border-color: var(--warning); }
+    .state-forbidden { background: var(--raised); color: var(--text); border-color: var(--border); }
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
   <div class="shell-nosidebar">
     <header class="topbar-wrap">
       <div class="topbar">
@@ -631,29 +886,39 @@
         </div>
 
         <nav class="topnav" id="main-nav" aria-label="Navegação principal">
-          <button type="button" class="nav-item" data-nav="overview" aria-current="page">
-            Visão geral
+          <button type="button" class="nav-item" data-nav="inicio" data-view="inicio" id="view-inicio" aria-current="page">
+            Início
           </button>
-          <button type="button" class="nav-item" data-nav="list">
-            Explorador <span class="nav-count">20 Regras</span>
+          <button type="button" class="nav-item" data-nav="pesquisa" data-view="pesquisa" id="view-pesquisa">
+            Pesquisa
           </button>
-          <button type="button" class="nav-item" data-nav="detail">
-            Dossiê SHA-256 <span class="nav-count" id="nav-detail-count">20</span>
+          <button type="button" class="nav-item" data-nav="despesas" data-view="despesas" id="view-despesas">
+            Despesas
           </button>
-          <button type="button" class="nav-item" data-nav="inbox">
-            Direito de resposta <span class="nav-count">4</span>
+          <button type="button" class="nav-item" data-nav="contratos" data-view="contratos" id="view-contratos">
+            Contratos
+          </button>
+          <button type="button" class="nav-item" data-nav="analises" data-view="analises" id="view-analises">
+            Análises <span class="nav-count">22 Regras</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="evidencias" data-view="evidencias" id="view-evidencias">
+            Evidências <span class="nav-count" id="nav-detail-count">SHA-256</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="acompanhamentos" data-view="acompanhamentos" id="view-acompanhamentos">
+            Acompanhamentos <span class="nav-count">4</span>
           </button>
         </nav>
 
         <div class="topbar-right">
-          <input type="search" class="input" id="global-search" placeholder="Filtrar CNPJ, órgão ou hash" aria-label="Filtrar CNPJ, órgão ou hash">
+          <input type="search" class="input" id="global-search" placeholder="Buscar CNPJ, órgão, lei ou hash (Ctrl+K)" aria-label="Buscar CNPJ, órgão, lei ou hash (Ctrl+K)">
+          <button type="button" class="btn" id="theme-toggle" aria-label="Alternar tema claro/escuro">🌓 Tema</button>
           <button type="button" class="btn btn-primary" id="btn-verify-batch">Verificar SHA-256</button>
           <button type="button" class="btn mobile-menu-btn" id="btn-mobile-menu" aria-label="Abrir navegação">Menu</button>
         </div>
       </div>
     </header>
 
-    <main class="canvas">
+    <main class="canvas" id="main-content">
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
@@ -669,7 +934,21 @@
       </div>
 
       <!-- SCREEN 1: OVERVIEW (drawn pattern: kpi-tabs-chart) -->
-      <section class="screen-view stack" id="screen-overview" aria-label="Visão geral da execução federal">
+      <section class="screen-view stack" id="screen-overview" data-view="inicio" aria-label="Visão geral da execução federal">
+        <aside class="ai-banner" role="complementary" aria-label="Aviso de limites da Inteligência Artificial">
+          <div class="ai-banner-content">
+            <strong>IA apoia, pessoas verificam:</strong> Sinais emitidos por algoritmos estatísticos e modelos de linguagem são instrumentos auxiliares de triagem técnica e não constituem juízo de culpa ou condenação. Todas as hipóteses devem ser confrontadas com os documentos oficiais e processos administrativos originais.
+          </div>
+        </aside>
+
+        <div class="epistemic-badges-legend" role="region" aria-label="Classificações Epistêmicas do Sistema">
+          <span class="badge badge-fact">Fato documentado</span>
+          <span class="badge badge-divergence">Divergência</span>
+          <span class="badge badge-unusual">Padrão incomum</span>
+          <span class="badge badge-hypothesis">Hipótese</span>
+          <span class="badge badge-reviewed">Revisado</span>
+        </div>
+
         <div class="kpis" role="region" aria-label="Saldos consolidados da base cívica">
           <div class="kpi">
             <div class="kpi-label">Volume federal conciliado</div>
@@ -805,7 +1084,7 @@
                 <span class="kv-val">312 sinais · 0,73%</span>
               </div>
               <div class="kv-row">
-                <span class="kv-label">3. [HIPÓTESE DE AUDITORIA / LIMITAÇÃO]</span>
+                <span class="kv-label">3. [LIMITAÇÃO E HIPÓTESE]</span>
                 <span class="kv-val">20 dossiês em curadoria · 0,04%</span>
               </div>
             </div>
@@ -886,9 +1165,50 @@
         </div>
       </section>
 
-      <!-- SCREEN 2: LIST (Explorador de Despesas, Contratos e Cotas) -->
-      <section class="screen-view stack" id="screen-list" hidden aria-label="Explorador de despesas federais">
+      <!-- SCREEN 2: PESQUISA (Busca cívica global com Ctrl+K) -->
+      <section class="screen-view stack" id="screen-pesquisa" data-view="pesquisa" hidden aria-label="Pesquisa cívica global">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Pesquisa cívica unificada</h2>
+              <div class="card-meta">Consulta integrada por favorecido, órgão público, parlamentar, contrato ou hash SHA-256 (Atalho: <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd>)</div>
+            </div>
+            <span class="pill neu">Filtro multi-entidades</span>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap;">
+            <input type="search" class="input" id="search-view-input" style="flex: 1; min-width: 280px;" placeholder="Digite CNPJ, nome do fornecedor, número do contrato ou palavra-chave..." aria-label="Pesquisa global">
+            <select class="select" id="search-type-select" aria-label="Tipo de entidade">
+              <option value="all">Todas as entidades</option>
+              <option value="supplier">Fornecedor / Favorecido</option>
+              <option value="organ">Órgão contratante</option>
+              <option value="agent">Parlamentar / Servidor</option>
+              <option value="contract">Contrato PNCP</option>
+              <option value="dossier">Dossiê técnico</option>
+            </select>
+            <button type="button" class="btn btn-primary" id="btn-search-exec">Pesquisar</button>
+          </div>
+
+          <!-- Interaction States Container (Loading, Empty, Error, Incompleto, Indisponível, Sem Permissão) -->
+          <div class="state-container" id="search-state-container" aria-live="polite">
+            <div class="skeleton" data-state="loading" id="search-state-loading" style="display: none;">Carregando registros oficiais e calculando reconciliação...</div>
+            <div class="state-empty" data-state="empty" id="search-state-empty">Nenhum registro encontrado para os filtros selecionados. Digite um termo acima para iniciar a consulta.</div>
+            <div class="state-error" data-state="error" id="search-state-error" style="display: none;">Erro ao processar consulta na base de dados. Tente novamente em instantes.</div>
+            <div class="state-incomplete" data-state="incompleto" id="search-state-incomplete" style="display: none;">Dados parciais ou incompletos na fonte governamental de origem.</div>
+            <div class="state-unavailable" data-state="indisponível" id="search-state-unavailable" style="display: none;">Fonte governamental oficial temporariamente indisponível para consulta remota.</div>
+            <div class="state-forbidden" data-state="sem permissão" id="search-state-forbidden" style="display: none;">Sem permissão: registro em triagem interna com acesso restrito a auditores autorizados via Row-Level Security (RLS).</div>
+          </div>
+        </article>
+      </section>
+
+      <!-- SCREEN 3: LIST (Explorador de Despesas com Estágios Contábeis) -->
+      <section class="screen-view stack" id="screen-list" data-view="despesas" hidden aria-label="Explorador de despesas federais">
         <article class="card card-flush">
+          <div class="card-head" style="padding: 14px 20px 0; margin-bottom: 0;">
+            <div>
+              <span class="card-meta">Estágios da execução orçamentária: <strong>Valor Empenhado</strong> ≥ <strong>Valor Liquidado</strong> ≥ <strong>Valor Pago</strong> (Reconciliação centavo a centavo)</span>
+            </div>
+          </div>
           <div class="toolbar">
             <div class="seg" role="tablist" aria-label="Filtrar por fonte oficial" id="explorer-source-tabs">
               <button type="button" role="tab" aria-selected="true" data-source="all">Todas as fontes (20)</button>
@@ -956,8 +1276,187 @@
         </article>
       </section>
 
-      <!-- SCREEN 3: DETAIL (Dossiê de Verificação SHA-256) -->
-      <section class="screen-view stack" id="screen-detail" hidden aria-label="Dossiê de verificação técnica">
+      <!-- SCREEN 4: CONTRATOS (Portal Nacional de Contratações Públicas - PNCP) -->
+      <section class="screen-view stack" id="screen-contratos" data-view="contratos" hidden aria-label="Contratos PNCP e licitações">
+        <article class="card card-flush">
+          <div class="toolbar">
+            <div class="seg" role="tablist" aria-label="Filtrar modalidade de contratação">
+              <button type="button" role="tab" aria-selected="true" data-contract-filter="all">Todos os contratos (Lei 14.133/21)</button>
+              <button type="button" role="tab" aria-selected="false" data-contract-filter="dispensa">Dispensa de Licitação</button>
+              <button type="button" role="tab" aria-selected="false" data-contract-filter="pregao">Pregão Eletrônico</button>
+              <button type="button" role="tab" aria-selected="false" data-contract-filter="concorrencia">Concorrência</button>
+            </div>
+            <span class="pill pos">Integrado ao PNCP</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data" id="contracts-table" aria-label="Tabela de Contratos Públicos">
+              <thead>
+                <tr>
+                  <th>Número do Contrato</th>
+                  <th>Órgão Contratante</th>
+                  <th>Fornecedor Contratado (CNPJ)</th>
+                  <th>Vigência</th>
+                  <th class="n">Valor Inicial</th>
+                  <th class="n">Aditivos</th>
+                  <th class="n">Valor Atualizado</th>
+                  <th class="n">Valor Liquidado</th>
+                  <th>Prova SHA-256</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>PNCP-042/2026</code></td>
+                  <td>Ministério da Saúde</td>
+                  <td>Soluções em TI Ltda <code>12.345.678/0001-90</code></td>
+                  <td>15/01/2026 a 15/01/2027</td>
+                  <td class="n money">R$ 1.120.000,00</td>
+                  <td class="n money">R$ 0,00</td>
+                  <td class="n money">R$ 1.120.000,00</td>
+                  <td class="n money">R$ 380.000,00</td>
+                  <td><code>sha256:4a7d1ed41447</code></td>
+                </tr>
+                <tr>
+                  <td><code>PNCP-089/2026</code></td>
+                  <td>Comando da Aeronáutica</td>
+                  <td>Logística & Transportes Eireli <code>98.765.432/0001-10</code></td>
+                  <td>01/02/2026 a 31/12/2026</td>
+                  <td class="n money">R$ 485.000,00</td>
+                  <td class="n money">R$ 50.000,00</td>
+                  <td class="n money">R$ 535.000,00</td>
+                  <td class="n money">R$ 215.000,00</td>
+                  <td><code>sha256:6e038891d441</code></td>
+                </tr>
+                <tr>
+                  <td><code>PNCP-104/2026</code></td>
+                  <td>Ministério da Educação</td>
+                  <td>Engenharia e Obras Civis S.A. <code>11.222.333/0001-44</code></td>
+                  <td>10/03/2026 a 10/03/2028</td>
+                  <td class="n money">R$ 2.450.000,00</td>
+                  <td class="n money">R$ 0,00</td>
+                  <td class="n money">R$ 2.450.000,00</td>
+                  <td class="n money">R$ 620.000,00</td>
+                  <td><code>sha256:8f434346648f</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-foot">
+            <span>Contratos consolidados diretamente do Portal Nacional de Contratações Públicas com reconciliação centavo a centavo.</span>
+            <span>Norma de regência: Lei nº 14.133/2021 (Nova Lei de Licitações)</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- SCREEN 5: ANÁLISES (Motor Laya ONNX, 22 Regras e Governança Epistêmica) -->
+      <section class="screen-view stack" id="screen-analises" data-view="analises" hidden aria-label="Painel de Análises e Regras de Auditoria">
+        <aside class="ai-banner" role="complementary" aria-label="Aviso de limites da Inteligência Artificial">
+          <div class="ai-banner-content">
+            <strong>IA apoia, pessoas verificam:</strong> Sinais emitidos por algoritmos estatísticos e modelos de linguagem são instrumentos auxiliares de triagem técnica e não constituem juízo de culpa ou condenação. Todas as hipóteses devem ser confrontadas com os documentos oficiais e processos administrativos originais.
+          </div>
+        </aside>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Classificações Epistêmicas e Graus de Certeza</h2>
+              <div class="card-meta">Padronização conforme Diretrizes Epistêmicas (AGENTS.md) e Design System</div>
+            </div>
+          </div>
+          <div class="epistemic-badges-legend" role="region" aria-label="Classificações Epistêmicas">
+            <span class="badge badge-fact">Fato documentado</span>
+            <span class="badge badge-divergence">Divergência</span>
+            <span class="badge badge-unusual">Padrão incomum</span>
+            <span class="badge badge-hypothesis">Hipótese</span>
+            <span class="badge badge-reviewed">Revisado</span>
+          </div>
+
+          <div class="epistemic-layers-block">
+            <div class="layer-item">
+              <span class="layer-pill">[DADO OFICIAL]</span>
+              <p>Fato bruto extraído diretamente de fontes primárias autenticadas (CGU, PNCP, CEAP/CEAPS, TSE, RFB) com prova criptográfica SHA-256 e sem qualquer inferência subjetiva.</p>
+            </div>
+            <div class="layer-item">
+              <span class="layer-pill">[INFERÊNCIA ESTATÍSTICA]</span>
+              <p>Resultados objetivos de algoritmos matemáticos determinísticos (Z-Score, Benford, Índice HHI, janelas deslizantes) confrontados contra distribuições históricas de controle.</p>
+            </div>
+            <div class="layer-item">
+              <span class="layer-pill">[LIMITAÇÃO E HIPÓTESE]</span>
+              <p>Hipóteses de auditoria em triagem técnica com explicitação formal de exceções legais válidas e preservação irrevogável do princípio da não-acusatoriedade.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card-flush">
+          <div class="card-head" style="padding: 18px 20px 12px;">
+            <div>
+              <h3 class="card-title">Catálogo Completo das 22 Regras de Auditoria Cívica</h3>
+              <div class="card-meta">Regras determinísticas calibradas e integradas ao motor de decisão System 1 Laya</div>
+            </div>
+            <span class="pill warn">22 Regras Ativas</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data" aria-label="Catálogo das 22 regras">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Nome da Regra</th>
+                  <th>Camada Epistêmica</th>
+                  <th>Classificação</th>
+                  <th>Fontes Cruzadas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>R-PNCP-OVERPRICE-Z3</code></td>
+                  <td>Sobrepreço em Contratação Pública (Z-Score &gt; 3,00σ)</td>
+                  <td><span class="layer-pill">[INFERÊNCIA ESTATÍSTICA]</span></td>
+                  <td><span class="badge badge-unusual">Padrão incomum</span></td>
+                  <td>PNCP + Catálogo CATSER</td>
+                </tr>
+                <tr>
+                  <td><code>R-CROSS-CEIS-SANCTIONED-SUPPLIER</code></td>
+                  <td>Fornecedor Contratado com Sanção Ativa no CEIS/CNEP</td>
+                  <td><span class="layer-pill">[DADO OFICIAL]</span></td>
+                  <td><span class="badge badge-divergence">Divergência</span></td>
+                  <td>CGU CEIS/CNEP + PNCP / Despesas</td>
+                </tr>
+                <tr>
+                  <td><code>R-STAT-BENFORD-DEVIATION</code></td>
+                  <td>Desvio Estatístico da Lei de Benford (MAD &gt; 0,0150)</td>
+                  <td><span class="layer-pill">[INFERÊNCIA ESTATÍSTICA]</span></td>
+                  <td><span class="badge badge-unusual">Padrão incomum</span></td>
+                  <td>CGU Favorecidos / Despesas</td>
+                </tr>
+                <tr>
+                  <td><code>R-CROSS-ELECTORAL-DONOR-SUPPLIER</code></td>
+                  <td>Cruzamento Fornecedor Público e Doador de Campanha</td>
+                  <td><span class="layer-pill">[DADO OFICIAL]</span></td>
+                  <td><span class="badge badge-divergence">Divergência</span></td>
+                  <td>TSE Eleições + CEAP / Contratos</td>
+                </tr>
+                <tr>
+                  <td><code>R-CROSS-QSA-SHARED-PARTNER</code></td>
+                  <td>Sócios Comuns em Empresas Concorrentes no Mesmo Órgão</td>
+                  <td><span class="layer-pill">[DADO OFICIAL]</span></td>
+                  <td><span class="badge badge-divergence">Divergência</span></td>
+                  <td>Receita Federal QSA + PNCP Contratos</td>
+                </tr>
+                <tr>
+                  <td><code>R-CROSS-SANCTIONED-PARTNER</code></td>
+                  <td>Sócio de Empresa Contratada com Sanção Ativa no CEIS</td>
+                  <td><span class="layer-pill">[LIMITAÇÃO E HIPÓTESE]</span></td>
+                  <td><span class="badge badge-hypothesis">Hipótese</span></td>
+                  <td>CGU Sanções + RFB QSA + PNCP</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- SCREEN 6: DETAIL (Dossiê de Verificação SHA-256 e Evidências) -->
+      <section class="screen-view stack" id="screen-detail" data-view="evidencias" hidden aria-label="Dossiê de verificação técnica">
         <div class="page-head" style="margin-bottom: 0;">
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <label for="dossier-picker" style="font-size: 13px; font-weight: 600; color: var(--muted);">Dossiê em Análise:</label>
@@ -1114,8 +1613,8 @@
         </div>
       </section>
 
-      <!-- SCREEN 4: INBOX (Fila de Curadoria e Direito de Resposta) -->
-      <section class="screen-view stack" id="screen-inbox" hidden aria-label="Fila de curadoria e direito de resposta">
+      <!-- SCREEN 7: INBOX (Fila de Curadoria e Direito de Resposta / Acompanhamentos) -->
+      <section class="screen-view stack" id="screen-inbox" data-view="acompanhamentos" hidden aria-label="Fila de curadoria e direito de resposta">
         <div class="grid-detail">
           <article class="card card-flush">
             <div class="card-head">
@@ -2042,17 +2541,45 @@
     }
 
     const SCREEN_META = {
+      inicio: {
+        title: 'Execução orçamentária e sinais de auditoria',
+        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+      },
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
         sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+      },
+      pesquisa: {
+        title: 'Pesquisa cívica global',
+        sub: 'Busca integrada por CNPJ, fornecedor, órgão público, contrato ou identificador SHA-256 (Atalho Ctrl+K).'
+      },
+      despesas: {
+        title: 'Explorador analítico de despesas públicas',
+        sub: 'Estágios contábeis discriminados: Valor Empenhado, Valor Liquidado e Valor Pago com reconciliação centavo a centavo.'
       },
       list: {
         title: 'Explorador de despesas, contratos e sinais (20 Regras)',
         sub: 'Consulta pública com mascaramento automático de CPF (LGPD) e verificação criptográfica individual por registro.'
       },
+      contratos: {
+        title: 'Portal Nacional de Contratações Públicas (PNCP)',
+        sub: 'Contratos administrativos regidos pela Lei nº 14.133/2021, termos aditivos e histórico de liquidações.'
+      },
+      analises: {
+        title: 'Painel analítico das 22 regras e motor Laya',
+        sub: 'Triagem técnica automatizada baseada nas 3 camadas epistêmicas · Introdução obrigatória: IA apoia, pessoas verificam.'
+      },
+      evidencias: {
+        title: 'Dossiê de verificação técnica e custódia de evidências',
+        sub: 'Separação estrita entre [DADO OFICIAL], [INFERÊNCIA ESTATÍSTICA] e [LIMITAÇÃO E HIPÓTESE].'
+      },
       detail: {
         title: 'Dossiê de verificação técnica',
-        sub: 'Separação estrita entre [DADO OFICIAL], [INFERÊNCIA ESTATÍSTICA] e [HIPÓTESE DE AUDITORIA / LIMITAÇÃO].'
+        sub: 'Separação estrita entre [DADO OFICIAL], [INFERÊNCIA ESTATÍSTICA] e [LIMITAÇÃO E HIPÓTESE].'
+      },
+      acompanhamentos: {
+        title: 'Fila de curadoria e direito de resposta',
+        sub: 'Governança editorial híbrida · Esclarecimentos oficiais protocolados lado a lado com paridade visual.'
       },
       inbox: {
         title: 'Fila de curadoria e direito de resposta',
@@ -2060,28 +2587,79 @@
       }
     };
 
+    const SCREEN_ALIASES = {
+      inicio: 'overview',
+      overview: 'overview',
+      pesquisa: 'pesquisa',
+      despesas: 'list',
+      list: 'list',
+      contratos: 'contratos',
+      analises: 'analises',
+      evidencias: 'detail',
+      detail: 'detail',
+      acompanhamentos: 'inbox',
+      inbox: 'inbox'
+    };
+
     function switchScreen(screenId, optDossierId) {
-      const target = SCREEN_META[screenId] ? screenId : 'overview';
+      const canonical = SCREEN_ALIASES[screenId] || (SCREEN_META[screenId] ? screenId : 'overview');
       document.querySelectorAll('.screen-view').forEach((sec) => {
-        sec.hidden = sec.id !== `screen-${target}`;
+        sec.hidden = sec.id !== `screen-${canonical}` && sec.id !== `screen-${screenId}`;
       });
       document.querySelectorAll('[data-nav]').forEach((btn) => {
         if (btn.classList.contains('nav-item')) {
-          if (btn.dataset.nav === target) btn.setAttribute('aria-current', 'page');
-          else btn.removeAttribute('aria-current');
+          const btnTarget = btn.dataset.nav;
+          if (btnTarget === screenId || SCREEN_ALIASES[btnTarget] === canonical) {
+            btn.setAttribute('aria-current', 'page');
+          } else {
+            btn.removeAttribute('aria-current');
+          }
         }
       });
-      document.getElementById('screen-title').textContent = SCREEN_META[target].title;
-      document.getElementById('screen-sub').textContent = SCREEN_META[target].sub;
-      document.getElementById('main-nav').classList.remove('open');
+      const meta = SCREEN_META[screenId] || SCREEN_META[canonical] || SCREEN_META.overview;
+      document.getElementById('screen-title').textContent = meta.title;
+      document.getElementById('screen-sub').textContent = meta.sub;
+      document.getElementById('main-nav')?.classList.remove('open');
 
-      if (target === 'overview') renderOverviewCharts();
-      if (target === 'list') renderExplorerTable();
-      if (target === 'detail') {
+      if (canonical === 'overview') renderOverviewCharts();
+      if (canonical === 'list') renderExplorerTable();
+      if (canonical === 'detail') {
         const idToLoad = optDossierId || currentDossierId;
         renderDetailScreen(idToLoad);
       }
     }
+
+    // Global search shortcut (Ctrl+K / Cmd+K)
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        const searchInput = document.getElementById('global-search');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+    });
+
+    // Dark mode toggle with localStorage persistence (hardened for sandboxed/restricted storage)
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    let storedTheme = 'light';
+    try {
+      storedTheme = localStorage.getItem('donb-theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+    } catch (_) {
+      storedTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    if (storedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    themeToggleBtn?.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      try {
+        localStorage.setItem('donb-theme', newTheme);
+      } catch (_) {}
+    });
 
     // Populate Dossier Picker dropdown
     function initDossierPicker() {

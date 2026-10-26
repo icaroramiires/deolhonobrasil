@@ -18,5 +18,12 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0010](0010-duplicate-document-and-spatiotemporal-overlap-rules.md) | Detecção de Documentos Fiscais em Duplicidade e Sobreposição Espaço-Temporal | Aceito | 2026-10-24 | `SPEC-0010` |
 | [ADR-0011](0011-temporal-recess-and-holiday-expense-audit-rules.md) | Detecção de Despesas em Fins de Semana, Feriados Nacionais e Recessos Parlamentares | Aceito | 2026-10-24 | `SPEC-0011` |
 | [ADR-0012](0012-electoral-campaign-donations-crossmatch.md) | Cruzamento entre Fornecedores Públicos e Doadores de Campanha Eleitoral (TSE) | Aceito | 2026-10-24 | `SPEC-0012` |
+| [ADR-0013](0013-corporate-members-qsa-and-individual-donor-crossmatch.md) | Quadro de Sócios (QSA/RFB): Sócios Comuns e Doações Eleitorais de Pessoas Físicas | Aceito | 2026-10-24 | `SPEC-0013` |
+| [ADR-0014](0014-company-age-and-capital-social-disproportionality.md) | Empresas Recém-Abertas e Capital Social Desproporcional | Aceito | 2026-10-25 | `SPEC-0014` |
+| [ADR-0015](0015-cnae-and-contract-object-compatibility.md) | Incompatibilidade entre Atividade Econômica (CNAE/RFB) e Objeto Contratual | Aceito | 2026-10-25 | `SPEC-0015` |
+| [ADR-0016](0016-public-agent-supplier-conflict-of-interest.md) | Conflito de Interesses: Servidores no QSA de Fornecedores do Próprio Órgão | Aceito | 2026-10-25 | `SPEC-0016` |
+| [ADR-0017](0017-shared-company-address-and-collusion-risk.md) | Indícios de Conluio: Fornecedores com Mesmo Endereço Físico Cadastral | Aceito | 2026-10-25 | `SPEC-0017` |
+| [ADR-0018](0018-sanctioned-partner-qsa-crossmatch.md) | Burla à Sanção Administrativa: Sócios (QSA) com Sanção Ativa no CEIS/CNEP | Aceito | 2026-10-26 | `SPEC-0018` |
+| [ADR-0019](0019-civic-ui-and-design-system-integration.md) | Interface Web Cívica, Design System Unificado (Tokens, Temas, Responsividade P0) | Aceito | 2026-10-26 | `SPEC-0019` |
 
 
