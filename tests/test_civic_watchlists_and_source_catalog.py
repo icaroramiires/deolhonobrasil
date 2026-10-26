@@ -248,7 +248,7 @@ class TestCivicWatchlistsAndSourceCatalog(unittest.TestCase):
 
     def test_ui_watchlist_and_catalog_markup_and_interactions(self) -> None:
         """Test Anchor 4: Verificação de marcação HTML, modais acessíveis e conformidade léxica."""
-        wireframe_path = Path("/Users/icaroramires/Projects/Python/deolhonobrasil/wireframe_de_olho_no_brasil.html")
+        wireframe_path = Path(__file__).resolve().parents[1] / "wireframe_de_olho_no_brasil.html"
         self.assertTrue(wireframe_path.exists())
         content = wireframe_path.read_text(encoding="utf-8")
 

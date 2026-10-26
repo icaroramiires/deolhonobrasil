@@ -27,6 +27,8 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0019](0019-civic-ui-and-design-system-integration.md) | Interface Web Cívica, Design System Unificado (Tokens, Temas, Responsividade P0) | Aceito | 2026-10-26 | `SPEC-0019` |
 | [ADR-0020](0020-civic-entity-profiles-and-detail-modals.md) | Perfis Cívicos de Entidades (Fornecedor, Mandatário e Órgão), Modais de Detalhe P0 e Linha do Tempo de Aditivos | Aceito | 2026-10-26 | `SPEC-0020` |
 | [ADR-0021](0021-civic-watchlists-and-source-catalog.md) | Sistema de Acompanhamentos Cívicos (Watchlists/Alertas de Eventos Públicos) e Catálogo Interativo de Metodologia e Fontes de Dados | Aceito | 2026-10-26 | `SPEC-0021` |
+| [ADR-0022](0022-retain-de-olho-no-brasil-name.md) | Manutenção do nome De Olho no Brasil e rejeição do nome de trabalho Verba Clara | Aceito | 2026-10-26 | Planejamento de identidade |
+| [ADR-0023](0023-observed-public-coverage-and-grounded-questions.md) | Cobertura pública observada e perguntas determinísticas sem modelo de linguagem | Aceito | 2026-10-26 | `SPEC-0022` |
 
 
 

@@ -1,5 +1,9 @@
 # Visão do Produto — De Olho no Brasil
 
+## 0. Decisão de nome
+
+O nome de trabalho **Verba Clara** foi avaliado em 26 de outubro de 2026 e **não foi adotado**. A página [https://verbaclara.pro/](https://verbaclara.pro/) apresentava, nessa data, o serviço VerbaClara de auditoria de verbas públicas, associado a FISCOIA INOVA SIMPLES (I.S.), CNPJ 67.973.713/0001-02, em Juazeiro do Norte/CE. A busca interativa de marcas no INPI não foi concluída nesta execução, portanto não há conclusão sobre registro marcário. O nome deste repositório permanece **De Olho no Brasil**. A decisão está em [ADR-0022](../architecture/adr/0022-retain-de-olho-no-brasil-name.md).
+
 ## 1. Propósito Central
 O **De Olho no Brasil** é uma infraestrutura cívica aberta, auditável e colaborativa de fiscalização assistida por inteligência artificial voltada à análise de gastos públicos brasileiros.
 

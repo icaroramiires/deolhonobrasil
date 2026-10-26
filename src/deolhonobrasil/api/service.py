@@ -576,6 +576,7 @@ class CivicAuditAPIService:
         sources = get_official_data_source_catalog()
         return 200, {
             "total_sources": len(sources),
+            "catalog_last_sync_is_declared_metadata": True,
             "sources": [
                 {
                     "source_id": s.source_id,
@@ -594,6 +595,17 @@ class CivicAuditAPIService:
                 for s in sources
             ],
         }
+
+    def get_public_coverage(self) -> tuple[int, dict[str, object]]:
+        from deolhonobrasil.inquiry.coverage import build_public_coverage
+
+        return 200, build_public_coverage(self.storage)
+
+    def ask_grounded_question(self, payload: dict[str, Any]) -> tuple[int, dict[str, object]]:
+        from deolhonobrasil.inquiry.coverage import answer_grounded_question
+
+        question = payload.get("question", "") if isinstance(payload, dict) else ""
+        return answer_grounded_question(self.storage, str(question))
 
     def list_watchlists(self) -> tuple[int, dict[str, object]]:
         subs = self.storage.list_watchlist_subscriptions()
@@ -918,6 +930,14 @@ class CivicAuditHTTPApp:
 
         if upper_method == "GET" and clean_path == "/api/v1/sources/catalog":
             code, payload = self.service.get_sources_catalog()
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/public-coverage":
+            code, payload = self.service.get_public_coverage()
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/questions":
+            code, payload = self.service.ask_grounded_question(json_body or {})
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
         if upper_method == "GET" and clean_path == "/api/v1/watchlists":
