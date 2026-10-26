@@ -1,7 +1,7 @@
 ---
 name: type-design-analyzer
 description: Analyze type design for encapsulation, invariant expression, usefulness, and enforcement.
-model: flash
+model: pro
 tools:
   - view_file
   - grep_search

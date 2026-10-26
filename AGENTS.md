@@ -1,4 +1,4 @@
-# De Olho no Brasil — Diretrizes de Agentes, Orquestração de Modelos e Workflow SDD (`ecc-universal@2.2.0`)
+# De Olho no Brasil — Diretrizes de Agentes, Orquestração de Modelos e Workflow SDD (`ecc-universal@2.2.3`)
 
 Este arquivo define as regras permanentes do repositório para roteamento de subagentes por complexidade de tarefa (economia de tokens), automação de navegador via `agent-browser`, governança epistêmica/jurídica e o **Workflow Spec-Driven Development (SDD) de 8 Fases** do **De Olho no Brasil**.
 
@@ -41,7 +41,7 @@ Use o CLI nativo em Rust **`agent-browser`** (`/opt/homebrew/bin/agent-browser`,
 
 ---
 
-## 4. Workflow Spec-Driven Development (SDD) de 8 Fases (`ecc-universal@2.2.0`)
+## 4. Workflow Spec-Driven Development (SDD) de 8 Fases (`ecc-universal@2.2.3`)
 
 Nenhuma funcionalidade não-trivial deve ser implementada sem percorrer as **8 fases obrigatórias** documentadas em [`docs/LOOP_ENGINEERING_SDD_HARNESS.md`](docs/LOOP_ENGINEERING_SDD_HARNESS.md):
 

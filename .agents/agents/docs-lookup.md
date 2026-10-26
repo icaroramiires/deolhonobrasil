@@ -4,7 +4,7 @@ description: When the user asks how to use a library, framework, or API or needs
 tools:
   - view_file
   - grep_search
-model: flash_lite
+model: flash
 ---
 
 ## Prompt Defense Baseline
