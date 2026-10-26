@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "name": "deolhonobrasil-engineering-loop",
+  "max_retries_per_gate": 3,
+  "min_unit_tests": 117,
+  "allowed_states": [
+    "DISCOVER",
+    "SPECIFY",
+    "PLAN",
+    "APPROVAL",
+    "IMPLEMENT",
+    "TEST",
+    "E2E",
+    "SECURITY",
+    "REVIEW",
+    "VERIFY",
+    "ACCEPT",
+    "BLOCKED"
+  ],
+  "gates": {
+    "GATE-01-DISCOVERY": {
+      "target_state": "DISCOVER",
+      "next_state": "SPECIFY",
+      "description": "Context, dependencies, architecture and epistemic risk discovery"
+    },
+    "GATE-02-SPECIFICATION": {
+      "target_state": "SPECIFY",
+      "next_state": "PLAN",
+      "description": "Complete SDD specification with 16 sections, FR, NFR, DATA, SEC, and test anchors"
+    },
+    "GATE-03-PLAN": {
+      "target_state": "PLAN",
+      "next_state": "APPROVAL",
+      "description": "Atomic tasks decomposition, technical design, and ADR"
+    },
+    "GATE-04-APPROVAL": {
+      "target_state": "APPROVAL",
+      "next_state": "IMPLEMENT",
+      "requires_human_approval": true,
+      "description": "Explicit human approval recorded before modifying project files"
+    },
+    "GATE-05-IMPLEMENTATION": {
+      "target_state": "IMPLEMENT",
+      "next_state": "TEST",
+      "description": "TDD Red-Green-Refactor implementation completed without architectural drifts"
+    },
+    "GATE-06-TEST": {
+      "target_state": "TEST",
+      "next_state": "E2E",
+      "command": "PYTHONPATH=src:.agents/loop python3 -m unittest discover tests",
+      "description": "Unit and integration tests suite passing with zero regressions and >= min_unit_tests"
+    },
+    "GATE-07-E2E": {
+      "target_state": "E2E",
+      "next_state": "SECURITY",
+      "command": "python3 scripts/run_e2e_browser.py",
+      "description": "Real browser E2E automation with agent-browser verifying user flows and accessibility tree"
+    },
+    "GATE-08-SECURITY": {
+      "target_state": "SECURITY",
+      "next_state": "REVIEW",
+      "command": "python3 scripts/run_security_audit.py",
+      "description": "SAST security scan, zero secrets, zero unmasked CPFs, zero accusatory terms"
+    },
+    "GATE-09-REVIEW": {
+      "target_state": "REVIEW",
+      "next_state": "VERIFY",
+      "description": "Dual adversarial review (Santa Method) with zero Critical/High findings"
+    },
+    "GATE-10-VERIFY": {
+      "target_state": "VERIFY",
+      "next_state": "ACCEPT",
+      "command": "PYTHONPATH=src python3 -m deolhonobrasil.harness.runner --checkpoint 4 --trials 3",
+      "description": "Autonomous harness verification passing with pass^3 = 1.0"
+    },
+    "GATE-11-ACCEPT": {
+      "target_state": "ACCEPT",
+      "next_state": "COMPLETED",
+      "description": "All quality gates approved, Definition of Done verified, ready for delivery"
+    }
+  }
+}

@@ -24,8 +24,14 @@ jobs:
 
       - name: Run Unit & Integration Test Suite (TDD Gate)
         env:
-          PYTHONPATH: src
+          PYTHONPATH: src:.agents/loop
         run: python3 -m unittest discover -s tests -v
+
+      - name: Run DevSecOps Security & Compliance Audit Gate
+        run: python3 scripts/run_security_audit.py
+
+      - name: Run Autonomous Engineering Loop Status & Gates Check
+        run: python3 scripts/run_loop.py status
 
       - name: Run Executable SDD & Eval Harness (pass^3 == 1.0)
         env:

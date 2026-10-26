@@ -1,0 +1,217 @@
+{
+  "task_id": "DONB-DEMO-LOOP",
+  "spec_id": "SPEC-0018",
+  "title": "Loop Autonomous Demonstration",
+  "current_state": "COMPLETED",
+  "history": [
+    {
+      "from_state": null,
+      "to_state": "DISCOVER",
+      "timestamp_utc": "2026-10-26T13:57:23.700765+00:00",
+      "reason": "Loop reset for task DONB-DEMO-LOOP"
+    },
+    {
+      "from_state": "DISCOVER",
+      "to_state": "SPECIFY",
+      "timestamp_utc": "2026-10-26T13:57:43.858254+00:00",
+      "reason": "GATE-01-DISCOVERY passed"
+    },
+    {
+      "from_state": "SPECIFY",
+      "to_state": "PLAN",
+      "timestamp_utc": "2026-10-26T13:57:52.123762+00:00",
+      "reason": "GATE-02-SPECIFICATION passed"
+    },
+    {
+      "from_state": "PLAN",
+      "to_state": "APPROVAL",
+      "timestamp_utc": "2026-10-26T13:58:01.453432+00:00",
+      "reason": "GATE-03-PLAN passed"
+    },
+    {
+      "from_state": "APPROVAL",
+      "to_state": "IMPLEMENT",
+      "timestamp_utc": "2026-10-26T13:58:08.833605+00:00",
+      "reason": "GATE-04-APPROVAL passed"
+    },
+    {
+      "from_state": "IMPLEMENT",
+      "to_state": "TEST",
+      "timestamp_utc": "2026-10-26T13:58:19.761127+00:00",
+      "reason": "GATE-05-IMPLEMENTATION passed"
+    },
+    {
+      "from_state": "TEST",
+      "to_state": "E2E",
+      "timestamp_utc": "2026-10-26T13:59:12.063307+00:00",
+      "reason": "GATE-06-TEST passed"
+    },
+    {
+      "from_state": "E2E",
+      "to_state": "SECURITY",
+      "timestamp_utc": "2026-10-26T15:47:15.149114+00:00",
+      "reason": "GATE-07-E2E passed"
+    },
+    {
+      "from_state": "SECURITY",
+      "to_state": "REVIEW",
+      "timestamp_utc": "2026-10-26T15:47:28.750652+00:00",
+      "reason": "GATE-08-SECURITY passed"
+    },
+    {
+      "from_state": "REVIEW",
+      "to_state": "VERIFY",
+      "timestamp_utc": "2026-10-26T15:57:50.760914+00:00",
+      "reason": "GATE-09-REVIEW passed"
+    },
+    {
+      "from_state": "VERIFY",
+      "to_state": "ACCEPT",
+      "timestamp_utc": "2026-10-26T15:58:26.538188+00:00",
+      "reason": "GATE-10-VERIFY passed"
+    },
+    {
+      "from_state": "ACCEPT",
+      "to_state": "COMPLETED",
+      "timestamp_utc": "2026-10-26T15:58:44.243856+00:00",
+      "reason": "All gates cleared (GATE-11-ACCEPT passed)"
+    }
+  ],
+  "gate_verdicts": {
+    "GATE-01-DISCOVERY": {
+      "gate_id": "GATE-01-DISCOVERY",
+      "target_state": "DISCOVER",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "Contexto, convenções e arquitetura inspecionados sem mutações no repositório.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T13:57:43.858028+00:00"
+    },
+    "GATE-02-SPECIFICATION": {
+      "gate_id": "GATE-02-SPECIFICATION",
+      "target_state": "SPECIFY",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "18 capacidades SDD verificadas com 108 artefatos e 106 âncoras de teste.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T13:57:52.123528+00:00"
+    },
+    "GATE-03-PLAN": {
+      "gate_id": "GATE-03-PLAN",
+      "target_state": "PLAN",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "Plano arquitetural e decomposição em 4 incrementos técnicos concluídos.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T13:58:01.453187+00:00"
+    },
+    "GATE-04-APPROVAL": {
+      "gate_id": "GATE-04-APPROVAL",
+      "target_state": "APPROVAL",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "Approval explicitly granted by Auditor Principal. Notes: Aprovado via chat pelo usuário",
+      "diagnostics": {
+        "approved_by": "Auditor Principal",
+        "notes": "Aprovado via chat pelo usuário"
+      },
+      "timestamp_utc": "2026-10-26T13:58:08.833339+00:00"
+    },
+    "GATE-05-IMPLEMENTATION": {
+      "gate_id": "GATE-05-IMPLEMENTATION",
+      "target_state": "IMPLEMENT",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "Implementação TDD do loop, runners e testes concluída.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T13:58:19.760905+00:00"
+    },
+    "GATE-06-TEST": {
+      "gate_id": "GATE-06-TEST",
+      "target_state": "TEST",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 3.247266,
+      "evidence": "    \"curated_amendments_count\": 1,\n    \"curated_amendments_paid_total_brl\": \"250000.00\",\n    \"audit_dossiers_count\": 0\n  }\n}",
+      "diagnostics": {
+        "command": "PYTHONPATH=src:.agents/loop python3 -m unittest discover tests",
+        "stdout_excerpt": "     \"inserted_new_count\": 1,\n      \"deduplicated_skipped_count\": 0,\n      \"quarantined_count\": 1,\n      \"computed_net_total\": \"250000.00\",\n      \"reported_control_total\": \"250000.00\",\n      \"is_reconciled\": true\n    },\n    {\n      \"source\": \"PNCP_CONTRATOS\",\n      \"raw_batch_sha256\": \"32542ce225f14b56e7533470551b94578da8ee271eb4036d015e554ef6816737\",\n      \"valid_records_count\": 1,\n      \"inserted_new_count\": 1,\n      \"deduplicated_skipped_count\": 0,\n      \"quarantined_count\": 0,\n      \"computed_net_total\": \"1820000.00\",\n      \"reported_control_total\": \"1820000.00\",\n      \"is_reconciled\": true\n    }\n  ],\n  \"lakehouse_summary\": {\n    \"raw_batches_count\": 4,\n    \"quarantined_records_count\": 3,\n    \"curated_expenses_count\": 3,\n    \"curated_expenses_net_total_brl\": \"20110.70\",\n    \"curated_contracts_count\": 1,\n    \"curated_contracts_current_total_brl\": \"1820000.00\",\n    \"curated_amendments_count\": 1,\n    \"curated_amendments_paid_total_brl\": \"250000.00\",\n    \"audit_dossiers_count\": 0\n  }\n}",
+        "stderr_excerpt": ".....................................................................................................................\n----------------------------------------------------------------------\nRan 117 tests in 3.036s\n\nOK"
+      },
+      "timestamp_utc": "2026-10-26T13:59:12.062899+00:00"
+    },
+    "GATE-07-E2E": {
+      "gate_id": "GATE-07-E2E",
+      "target_state": "E2E",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 4.535351,
+      "evidence": "[E2E] Screenshot saved successfully (114073 bytes).\n[E2E] Navigating to /api/v1/expenses in browser...\n[E2E] Browser API verification PASSED.\n[E2E] Closing agent-browser session...\n[E2E] ALL BROWSER E2E TESTS PASSED CLEANLY.",
+      "diagnostics": {
+        "command": "python3 scripts/run_e2e_browser.py",
+        "stdout_excerpt": "cipal\" [ref=e2]\n  - button \"Visão geral\" [ref=e8]\n  - button \"Explorador 20 Regras\" [ref=e9]\n  - button \"Dossiê SHA-256 20\" [ref=e10]\n  - button \"Direito de resposta 4\" [ref=e11]\n- searchbox \"Filtrar CNPJ, órgão ou hash\" [ref=e3]\n- button \"Verificar SHA-256\" [ref=e4]\n- heading \"Execução orçamentária e sinais de auditoria\" [level=1, ref=e5]\n- tab \"Jan–Out 2026\" [selected, ref=e12]\n- tab \"Últimos 90 dias\" [ref=e13]\n- button \"Exportar Parquet (CC-BY-4.0)\" [ref=e6]\n- region \"Visão geral da execução federal\" [ref=e7]\n  - region \"Saldos consolidados da base cívica\" [ref=e14]\n  - heading \"Execução mensal por fonte oficial (R$ milhões)\" [level=2, ref=e15]\n[E2E] Saving screenshot to /Users/icaroramires/Projects/Python/deolhonobrasil/.agents/artifacts/e2e/e2e_verified.png...\n[E2E] Screenshot saved successfully (114073 bytes).\n[E2E] Navigating to /api/v1/expenses in browser...\n[E2E] Browser API verification PASSED.\n[E2E] Closing agent-browser session...\n[E2E] ALL BROWSER E2E TESTS PASSED CLEANLY.",
+        "stderr_excerpt": "127.0.0.1 - - [26/Oct/2026 12:47:10] \"GET /api/v1/health HTTP/1.1\" 200 69\n127.0.0.1 - - [26/Oct/2026 12:47:13] \"GET / HTTP/1.1\" 200 106059\n127.0.0.1 - - [26/Oct/2026 12:47:13] \"GET /api/v1/reconciliation HTTP/1.1\" 200 392\n127.0.0.1 - - [26/Oct/2026 12:47:13] \"GET /api/v1/dossiers HTTP/1.1\" 200 3519\n127.0.0.1 - - [26/Oct/2026 12:47:14] \"GET /favicon.ico HTTP/1.1\" 404 76\n127.0.0.1 - - [26/Oct/2026 12:47:14] \"GET /api/v1/expenses HTTP/1.1\" 200 2090"
+      },
+      "timestamp_utc": "2026-10-26T15:47:15.148649+00:00"
+    },
+    "GATE-08-SECURITY": {
+      "gate_id": "GATE-08-SECURITY",
+      "target_state": "SECURITY",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 1.078522,
+      "evidence": "5. Checking container non-root and GitHub workflow permissions...\n   PASSED: Least privilege enforced in Dockerfile and CI workflow.\n------------------------------------------------------------------------\nAUDIT VERDICT: PASSED (All 5 security gates cleared with 0 Critical/High issues)\n========================================================================",
+      "diagnostics": {
+        "command": "python3 scripts/run_security_audit.py",
+        "stdout_excerpt": "============\n  ANTIGRAVITY AUTONOMOUS SECURITY & COMPLIANCE AUDIT GATE\n========================================================================\n1. Scanning for exposed secrets and credentials...\n   PASSED: Zero exposed secrets detected.\n2. Verifying epistemic non-accusatory language invariance...\n   PASSED: Zero defamatory or accusatory terms detected in source code.\n3. Checking constant-time token verification (hmac.compare_digest)...\n   PASSED: hmac.compare_digest properly enforced in API authentication.\n4. Checking SSRF protection and official domain allowlist...\n   PASSED: SSRF guard enforces HTTPS and .gov.br/.leg.br allowlist.\n5. Checking container non-root and GitHub workflow permissions...\n   PASSED: Least privilege enforced in Dockerfile and CI workflow.\n------------------------------------------------------------------------\nAUDIT VERDICT: PASSED (All 5 security gates cleared with 0 Critical/High issues)\n========================================================================",
+        "stderr_excerpt": ""
+      },
+      "timestamp_utc": "2026-10-26T15:47:28.750297+00:00"
+    },
+    "GATE-09-REVIEW": {
+      "gate_id": "GATE-09-REVIEW",
+      "target_state": "REVIEW",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "Santa Method dual review convergence: Reviewer A (PASS) and Reviewer B (PASS) with 0 Critical/High findings.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T15:57:50.760683+00:00"
+    },
+    "GATE-10-VERIFY": {
+      "gate_id": "GATE-10-VERIFY",
+      "target_state": "VERIFY",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 12.073357,
+      "evidence": "      },\n      \"violations\": []\n    }\n  ]\n}",
+      "diagnostics": {
+        "command": "PYTHONPATH=src python3 -m deolhonobrasil.harness.runner --checkpoint 4 --trials 3",
+        "stdout_excerpt": "\"passed\": true,\n      \"metrics\": {\n        \"frozen_domain_entities_verified\": 15,\n        \"eval_definitions_verified\": 4\n      },\n      \"violations\": []\n    },\n    {\n      \"gate_id\": \"GATE-03-VERIFICATION-LOOP\",\n      \"gate_name\": \"6-Phase Deterministic Verification Loop & Delivery Gate\",\n      \"ecc_skill\": \"verification-loop + delivery-gate\",\n      \"passed\": true,\n      \"metrics\": {\n        \"python_files_compiled\": 44,\n        \"public_functions_type_checked\": 52,\n        \"unit_tests_executed\": 117,\n        \"unit_tests_passed\": 117,\n        \"reconciliation_status\": \"OK\",\n        \"disk_free_gb\": 3.76\n      },\n      \"violations\": []\n    },\n    {\n      \"gate_id\": \"GATE-04-SECURITY-AND-LOOP\",\n      \"gate_name\": \"DevSecOps Security Audit & Autonomous Engineering Loop Engine\",\n      \"ecc_skill\": \"security-review + verification-loop\",\n      \"passed\": true,\n      \"metrics\": {\n        \"loop_artifacts_verified\": 9,\n        \"security_audit_exit_code\": 0\n      },\n      \"violations\": []\n    }\n  ]\n}",
+        "stderr_excerpt": "<frozen runpy>:130: RuntimeWarning: 'deolhonobrasil.harness.runner' found in sys.modules after import of package 'deolhonobrasil.harness', but prior to execution of 'deolhonobrasil.harness.runner'; this may result in unpredictable behaviour"
+      },
+      "timestamp_utc": "2026-10-26T15:58:26.537652+00:00"
+    },
+    "GATE-11-ACCEPT": {
+      "gate_id": "GATE-11-ACCEPT",
+      "target_state": "ACCEPT",
+      "verdict": "PASSED",
+      "exit_code": 0,
+      "duration_seconds": 0.0,
+      "evidence": "All 11 Quality Gates passed, 117 unit tests green, E2E browser verified, security scan 0 findings, DoD met.",
+      "diagnostics": null,
+      "timestamp_utc": "2026-10-26T15:58:44.243623+00:00"
+    }
+  },
+  "retries": {
+    "GATE-06-TEST": 0
+  },
+  "is_blocked": false,
+  "block_reason": null,
+  "last_updated_utc": "2026-10-26T15:58:44.243862+00:00"
+}
