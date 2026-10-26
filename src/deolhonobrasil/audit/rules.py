@@ -9,6 +9,8 @@ Implementa as regras da Fase 4:
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -2110,6 +2112,204 @@ def evaluate_shared_company_address_rule(
             )
 
     return signals
+
+
+def _normalize_person_name(name: str) -> str:
+    """Normaliza nome de pessoa para comparação estrita anti-homonímia (NFR-021)."""
+    raw = unicodedata.normalize("NFKD", str(name or "")).encode("ASCII", "ignore").decode("ASCII").upper()
+    cleaned = re.sub(r"[^\w\s]", " ", raw)
+    return " ".join(cleaned.split())
+
+
+def _extract_comparable_doc_digits(raw: str) -> str:
+    """Extrai dígitos comparáveis preservando 14 dígitos (CNPJ) ou 6 dígitos centrais (CPF mascarado)."""
+    digits = "".join(ch for ch in str(raw or "") if ch.isdigit())
+    if len(digits) == 14:
+        return digits
+    if len(digits) == 11:
+        return digits[3:9]
+    if len(digits) == 6:
+        return digits
+    return digits
+
+
+def _member_matches_sanction(member: CuratedCorporateMemberRecord, sanction: CuratedSanctionRecord) -> bool:
+    """Verifica correspondência entre sócio do QSA e certidão do CEIS/CNEP com salvaguarda anti-homonímia."""
+    mem_key = _extract_comparable_doc_digits(member.member_doc_masked)
+    sanc_key = _extract_comparable_doc_digits(sanction.sanctioned_doc_normalized)
+
+    # 1. Caso CNPJ (14 dígitos)
+    if len(mem_key) == 14 and len(sanc_key) == 14:
+        return mem_key == sanc_key
+
+    # 2. Caso CPF mascarado (6 dígitos centrais)
+    if len(mem_key) == 6 and len(sanc_key) == 6:
+        # Exigência cumulativa: documento mascarado idêntico E nome normalizado idêntico (anti-homonímia NFR-021 / AC-072)
+        if mem_key != sanc_key:
+            return False
+        mem_norm_name = _normalize_person_name(member.member_name_raw)
+        sanc_norm_name = _normalize_person_name(sanction.sanctioned_name)
+        return bool(mem_norm_name and sanc_norm_name and mem_norm_name == sanc_norm_name)
+
+    return False
+
+
+def evaluate_sanctioned_partner_supplier_rule(
+    corporate_members: Sequence[CuratedCorporateMemberRecord],
+    sanctions: Sequence[CuratedSanctionRecord],
+    contracts: Sequence[CuratedPublicContract] = (),
+    expenses: Sequence[CuratedPublicExpense] = (),
+) -> list[AuditSignal]:
+    """Identifica sócios e administradores (QSA) de fornecedores contratados com sanção ativa no CEIS/CNEP (SPEC-0018).
+
+    Código da Regra: R-CROSS-SANCTIONED-PARTNER
+    Fundamentação Legal: Art. 14, § 1º, II e Art. 160 da Lei nº 14.133/2021; Acórdãos TCU nº 2.218/2012 e 1.637/2021-Plenário.
+    Classificação Epistêmica: CROSS_SOURCE_DIVERGENCE
+    """
+    if not corporate_members or not sanctions or (not contracts and not expenses):
+        return []
+
+    # 1. Agrupar contratações e despesas por fornecedor (CNPJ normalizado)
+    contracts_by_supplier: dict[str, list[CuratedPublicContract]] = defaultdict(list)
+    for c in contracts:
+        if c.current_amount > Decimal("0") and c.signature_date:
+            contracts_by_supplier[c.supplier_doc_normalized].append(c)
+
+    expenses_by_supplier: dict[str, list[CuratedPublicExpense]] = defaultdict(list)
+    for e in expenses:
+        if e.net_amount > Decimal("0") and e.issue_date:
+            expenses_by_supplier[e.supplier_doc_normalized].append(e)
+
+    active_suppliers = set(contracts_by_supplier.keys()) | set(expenses_by_supplier.keys())
+    if not active_suppliers:
+        return []
+
+    # 2. Mapear membros do QSA por raiz de CNPJ e por CNPJ completo
+    qsa_by_root: dict[str, list[CuratedCorporateMemberRecord]] = defaultdict(list)
+    qsa_by_cnpj: dict[str, list[CuratedCorporateMemberRecord]] = defaultdict(list)
+    for qsa in corporate_members:
+        if qsa.corporate_root_cnpj:
+            qsa_by_root[qsa.corporate_root_cnpj].append(qsa)
+        if qsa.full_cnpj_normalized:
+            qsa_by_cnpj[qsa.full_cnpj_normalized].append(qsa)
+
+    signals: list[AuditSignal] = []
+    seen_signals: set[str] = set()
+
+    # 3. Para cada fornecedor contratado, verificar se algum sócio do QSA possui sanção ativa concomitante
+    for sup_doc in sorted(active_suppliers):
+        sup_root = extract_cnpj_root(sup_doc)
+        members = list(qsa_by_cnpj.get(sup_doc, []))
+        if sup_root and sup_root in qsa_by_root:
+            for m in qsa_by_root[sup_root]:
+                if m not in members:
+                    members.append(m)
+
+        if not members:
+            continue
+
+        sup_contracts = contracts_by_supplier.get(sup_doc, [])
+        sup_expenses = expenses_by_supplier.get(sup_doc, [])
+
+        for member in members:
+            for sanction in sanctions:
+                if not _member_matches_sanction(member, sanction):
+                    continue
+
+                # Filtrar transações contemporâneas à vigência da sanção
+                matched_contracts = [
+                    c for c in sup_contracts
+                    if sanction.start_date <= c.signature_date and (sanction.end_date is None or c.signature_date <= sanction.end_date)
+                ]
+                matched_expenses = [
+                    e for e in sup_expenses
+                    if sanction.start_date <= e.issue_date and (sanction.end_date is None or e.issue_date <= sanction.end_date)
+                ]
+
+                if not matched_contracts and not matched_expenses:
+                    continue
+
+                audited_amount = (
+                    sum(c.current_amount for c in matched_contracts)
+                    + sum(e.net_amount for e in matched_expenses)
+                )
+
+                # Obter nome do fornecedor e órgão contratante
+                if matched_contracts:
+                    clean_supplier = sanitize_untrusted_text(matched_contracts[0].supplier_name, 120)
+                    clean_organ = sanitize_untrusted_text(matched_contracts[0].organ_name, 120)
+                else:
+                    clean_supplier = sanitize_untrusted_text(matched_expenses[0].supplier_name, 120)
+                    clean_organ = sanitize_untrusted_text(matched_expenses[0].organ_name, 120)
+
+                clean_partner = sanitize_untrusted_text(member.member_name_raw, 100)
+                clean_partner_doc = sanitize_untrusted_text(member.member_doc_masked, 50)
+                clean_sanc_code = sanitize_untrusted_text(sanction.sanction_code, 50)
+                clean_sanc_type = sanitize_untrusted_text(sanction.sanction_type, 100)
+                clean_sanc_organ = sanitize_untrusted_text(sanction.sanctioning_organ, 120)
+
+                # Chave de desduplicação
+                sig_key = f"{sup_doc}:{clean_partner_doc}:{clean_sanc_code}"
+                if sig_key in seen_signals:
+                    continue
+                seen_signals.add(sig_key)
+
+                # Proveniência tripla: Sanção + QSA + Contrato/Despesa
+                provenance_hashes = tuple(
+                    sorted(
+                        {sanction.provenance.raw_batch_sha256, member.provenance.raw_batch_sha256}
+                        | {c.provenance.raw_batch_sha256 for c in matched_contracts}
+                        | {e.provenance.raw_batch_sha256 for e in matched_expenses}
+                    )
+                )
+
+                events_count = len(matched_contracts) + len(matched_expenses)
+                sanc_start_str = sanction.start_date.strftime("%d/%m/%Y")
+                sanc_end_str = sanction.end_date.strftime("%d/%m/%Y") if sanction.end_date else "vigente sem data final estipulada"
+
+                title = f"Sócio ou administrador com registro ativo no CEIS/CNEP em fornecedor contratado ({clean_supplier})"
+                fact_summary = (
+                    f"O sócio/administrador {clean_partner} ({clean_partner_doc}), integrante do QSA do fornecedor "
+                    f"{clean_supplier} ({sup_doc}), possui registro de sanção administrativa no CEIS/CNEP "
+                    f"({clean_sanc_code}, {clean_sanc_type}, órgão sancionador: {clean_sanc_organ}), "
+                    f"com período sancionatório de {sanc_start_str} até {sanc_end_str}, "
+                    f"concomitante a contratações/despesas públicas no valor de R$ {audited_amount:.2f} perante {clean_organ}."
+                )
+                stat_summary = (
+                    f"Cruzamento determinístico cadastral entre o Quadro de Sócios e Administradores (RFB), "
+                    f"o cadastro de sanções administrativas CEIS/CNEP (CGU) e contratações públicas federais, "
+                    f"identificando contemporaneidade temporal entre a sanção e {events_count} instrumento(s) contratual(is) ou despesa(s)."
+                )
+                scope_limit = (
+                    "Nos termos do art. 14, § 1º, inciso II e art. 160 da Lei nº 14.133/2021 e da jurisprudência do TCU "
+                    "(Acórdãos nº 2.218/2012 e 1.637/2021-Plenário), a extensão dos efeitos restritivos da sanção a pessoa "
+                    "jurídica com sócios comuns depende de procedimento formal de desconsideração da personalidade jurídica, "
+                    "verificação de poderes de gerência ou identidade fática, admitindo exceções como sócios minoritários sem "
+                    "ingerência administrativa ou decisões judiciais de efeito suspensivo. A convergência cadastral não constitui "
+                    "declaração de dolo ou imputação automática de irregularidade."
+                )
+
+                sig_id = f"SIG-SANC-QSA-{compute_sha256_text(sig_key)[:16]}"
+                signals.append(
+                    AuditSignal(
+                        signal_id=sig_id,
+                        rule_code="R-CROSS-SANCTIONED-PARTNER",
+                        title=title,
+                        official_fact_summary=fact_summary,
+                        statistical_inference_summary=stat_summary,
+                        scope_limitation_summary=scope_limit,
+                        epistemic_layer=EpistemicClassification.CROSS_SOURCE_DIVERGENCE,
+                        metric_name="sanctioned_partner_overlap_count",
+                        metric_value=Decimal(str(events_count)),
+                        threshold_value=Decimal("1.00"),
+                        audited_amount=audited_amount,
+                        provenance_hashes=provenance_hashes,
+                        requires_human_review=True,
+                    )
+                )
+
+    return signals
+
 
 
 
