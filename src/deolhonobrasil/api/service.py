@@ -597,7 +597,7 @@ class CivicAuditHTTPApp:
         else:
             clean_path = path.rstrip("/") or "/"
 
-        if upper_method == "GET" and clean_path in ("/", "/index.html", "/wireframe_de_olho_no_brasil.html"):
+        if upper_method in ("GET", "HEAD") and clean_path in ("/", "/index.html", "/wireframe_de_olho_no_brasil.html"):
             from pathlib import Path
 
             repo_root = Path(__file__).resolve().parents[3]
