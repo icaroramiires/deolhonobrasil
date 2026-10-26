@@ -1014,3 +1014,274 @@ class CivicEntityProfile:
         object.__setattr__(self, "document_masked", clean_doc)
 
 
+VALID_WATCHLIST_ENTITY_TYPES = ("FORNECEDOR", "MANDATARIO", "ORGAO", "CONTRATO", "DOSSIE")
+VALID_WATCHLIST_EVENT_TYPES = (
+    "NOVO_DOCUMENTO",
+    "ALTERACAO_VALOR",
+    "NOVO_PAGAMENTO",
+    "NOVA_ANALISE",
+    "RESPOSTA_CONTESTACAO",
+)
+VALID_WATCHLIST_FREQUENCIES = ("IMEDIATA", "DIARIA", "SEMANAL")
+VALID_WATCHLIST_CHANNELS = ("NAVEGADOR_LOCAL", "WEBHOOK_CADASTRADO")
+
+
+@dataclass(frozen=True, slots=True)
+class CivicWatchlistSubscription:
+    """Assinatura imutável de acompanhamento cívico (SPEC-0021 / FR-046)."""
+
+    subscription_id: str
+    entity_type: str
+    entity_id: str
+    entity_name: str
+    monitored_events: tuple[str, ...]
+    frequency: str = "DIARIA"
+    channel: str = "NAVEGADOR_LOCAL"
+    is_active: bool = True
+    created_at: str = ""
+    sha256: str = ""
+
+    def __post_init__(self) -> None:
+        if self.entity_type not in VALID_WATCHLIST_ENTITY_TYPES:
+            raise ValueError(
+                f"entity_type inválido: {self.entity_type}. Deve ser um de: {VALID_WATCHLIST_ENTITY_TYPES}"
+            )
+        if self.frequency not in VALID_WATCHLIST_FREQUENCIES:
+            raise ValueError(
+                f"frequency inválida: {self.frequency}. Deve ser uma de: {VALID_WATCHLIST_FREQUENCIES}"
+            )
+        if self.channel not in VALID_WATCHLIST_CHANNELS:
+            raise ValueError(
+                f"channel inválido: {self.channel}. Deve ser um de: {VALID_WATCHLIST_CHANNELS}"
+            )
+        clean_sub_id = sanitize_untrusted_text(self.subscription_id, 80)
+        clean_ent_id = sanitize_untrusted_text(self.entity_id, 80)
+        clean_ent_name = sanitize_untrusted_text(self.entity_name, 250) or clean_ent_id
+        if not clean_sub_id or not clean_ent_id:
+            raise ValueError("subscription_id e entity_id são obrigatórios.")
+
+        clean_events = tuple(
+            evt for evt in self.monitored_events if evt in VALID_WATCHLIST_EVENT_TYPES
+        )
+        if not clean_events:
+            clean_events = ("NOVO_DOCUMENTO",)
+
+        created = sanitize_untrusted_text(self.created_at, 40)
+        if not created:
+            created = datetime.now(timezone.utc).isoformat()
+
+        hash_val = sanitize_untrusted_text(self.sha256, 64)
+        if len(hash_val) != 64:
+            hash_val = compute_sha256_text(
+                f"{clean_sub_id}|{self.entity_type}|{clean_ent_id}|{','.join(clean_events)}|{created}"
+            )
+
+        object.__setattr__(self, "subscription_id", clean_sub_id)
+        object.__setattr__(self, "entity_id", clean_ent_id)
+        object.__setattr__(self, "entity_name", clean_ent_name)
+        object.__setattr__(self, "monitored_events", clean_events)
+        object.__setattr__(self, "created_at", created)
+        object.__setattr__(self, "sha256", hash_val)
+
+
+@dataclass(frozen=True, slots=True)
+class CivicWatchlistEvent:
+    """Evento público notificado para uma entidade acompanhada (SPEC-0021 / FR-046)."""
+
+    event_id: str
+    subscription_id: str
+    entity_type: str
+    entity_id: str
+    event_type: str
+    title: str
+    description: str
+    occurred_at: str
+    payload_sha256: str
+    is_read: bool = False
+
+    def __post_init__(self) -> None:
+        clean_evt_id = sanitize_untrusted_text(self.event_id, 80)
+        clean_sub_id = sanitize_untrusted_text(self.subscription_id, 80)
+        clean_ent_id = sanitize_untrusted_text(self.entity_id, 80)
+        if not clean_evt_id or not clean_sub_id or not clean_ent_id:
+            raise ValueError("event_id, subscription_id e entity_id são obrigatórios.")
+
+        clean_type = self.event_type if self.event_type in VALID_WATCHLIST_EVENT_TYPES else "NOVO_DOCUMENTO"
+        clean_title = sanitize_untrusted_text(self.title, 200) or "Novo Evento Público"
+        clean_desc = sanitize_untrusted_text(self.description, 500) or "Registro de ato administrativo oficial"
+        clean_date = sanitize_untrusted_text(self.occurred_at, 40) or datetime.now(timezone.utc).isoformat()
+        clean_hash = sanitize_untrusted_text(self.payload_sha256, 64)
+        if len(clean_hash) != 64:
+            raise ValueError("payload_sha256 deve ser um hash hexadecimal de 64 caracteres.")
+
+        object.__setattr__(self, "event_id", clean_evt_id)
+        object.__setattr__(self, "subscription_id", clean_sub_id)
+        object.__setattr__(self, "entity_id", clean_ent_id)
+        object.__setattr__(self, "event_type", clean_type)
+        object.__setattr__(self, "title", clean_title)
+        object.__setattr__(self, "description", clean_desc)
+        object.__setattr__(self, "occurred_at", clean_date)
+        object.__setattr__(self, "payload_sha256", clean_hash)
+
+
+@dataclass(frozen=True, slots=True)
+class DataSourceSpecification:
+    """Especificação técnica e epistemológica de fonte de dados oficial (SPEC-0021 / FR-047)."""
+
+    source_id: str
+    name: str
+    governing_body: str
+    official_url: str
+    temporal_coverage: str
+    geographic_coverage: str
+    sync_frequency: str
+    key_fields: tuple[str, ...]
+    privacy_sanitizations: tuple[str, ...]
+    epistemic_limitations: tuple[str, ...]
+    version: str
+    last_sync_utc: str
+
+
+def get_official_data_source_catalog() -> tuple[DataSourceSpecification, ...]:
+    """Retorna o catálogo completo das 8 fontes oficiais integradas com metadados e limitações."""
+    return (
+        DataSourceSpecification(
+            source_id="CAMARA_CEAP",
+            name="Cota para o Exercício da Atividade Parlamentar (CEAP)",
+            governing_body="Câmara dos Deputados",
+            official_url="https://dadosabertos.camara.leg.br",
+            temporal_coverage="2019-2026",
+            geographic_coverage="Federal (Câmara dos Deputados)",
+            sync_frequency="Diária",
+            key_fields=("numAno", "numMes", "txtFornecedor", "txtCNPJCPF", "vlrLiquido", "urlDocumento"),
+            privacy_sanitizations=("Mascaramento estrito de CPF (***.XXX.XXX-**)", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Reembolsos dependem de homologação administrativa interna.",
+                "Emissão de nota fiscal em final de semana ou feriado pode refletir prestação contínua de serviço.",
+            ),
+            version="1.3.0",
+            last_sync_utc="2026-10-26T12:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="SENADO_CEAPS",
+            name="Cota para o Exercício da Atividade Parlamentar dos Senadores (CEAPS)",
+            governing_body="Senado Federal",
+            official_url="https://legis.senado.leg.br/dadosabertos",
+            temporal_coverage="2019-2026",
+            geographic_coverage="Federal (Senado Federal)",
+            sync_frequency="Diária",
+            key_fields=("ANO", "MES", "SENADOR", "FORNECEDOR", "CNPJ_CPF", "VALOR_REEMBOLSADO"),
+            privacy_sanitizations=("Mascaramento estrito de CPF (***.XXX.XXX-**)", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Regras regimentais do Senado possuem tetos cumulativos diferenciados.",
+                "Valores passíveis de estorno contábil posterior.",
+            ),
+            version="1.2.0",
+            last_sync_utc="2026-10-26T12:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="CGU_EMENDAS",
+            name="Emendas Parlamentares e Transferências Especiais",
+            governing_body="Controladoria-Geral da União (CGU) / Portal da Transparência",
+            official_url="https://portaldatransparencia.gov.br",
+            temporal_coverage="2020-2026",
+            geographic_coverage="Nacional (Transferências da União a Estados e Municípios)",
+            sync_frequency="Diária",
+            key_fields=("codigoEmenda", "autorEmenda", "tipoEmenda", "valorEmpenhado", "valorLiquidado", "valorPago"),
+            privacy_sanitizations=("Preservação do mascaramento CGU de CPF", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Diferença entre empenhado e pago reflete o ciclo orçamentário regular.",
+                "Execução descentralizada sob responsabilidade do ente recebedor.",
+            ),
+            version="1.4.0",
+            last_sync_utc="2026-10-26T06:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="PNCP_CONTRATOS",
+            name="Portal Nacional de Contratações Públicas (PNCP) - Contratos e Editais",
+            governing_body="Ministério da Gestão e da Inovação em Serviços Públicos (MGI)",
+            official_url="https://pncp.gov.br",
+            temporal_coverage="2021-2026",
+            geographic_coverage="Nacional (União, Estados e Municípios)",
+            sync_frequency="Diária",
+            key_fields=("numeroControlePNCP", "orgaoEntidade", "valorGlobal", "objetoContrato", "cnpjContratado"),
+            privacy_sanitizations=("Mascaramento de CPF de representantes legais", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Adesão gradual de municípios de pequeno porte conforme cronograma da Lei 14.133/21.",
+                "Aditivos contratuais constituem instrumentos regulares admitidos em lei.",
+            ),
+            version="1.5.0",
+            last_sync_utc="2026-10-26T06:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="CGU_CEIS",
+            name="Cadastro Nacional de Empresas Inidôneas e Suspensas (CEIS)",
+            governing_body="Controladoria-Geral da União (CGU)",
+            official_url="https://portaldatransparencia.gov.br/sancoes/ceis",
+            temporal_coverage="2015-2026",
+            geographic_coverage="Nacional (Todas as esferas administrativas)",
+            sync_frequency="Diária",
+            key_fields=("codigoSancao", "cpfCnpjSancionado", "nomeSancionado", "dataInicioSancao", "dataFimSancao"),
+            privacy_sanitizations=("Mascaramento LGPD de CPF sancionado", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Sanções expiradas perdem vigência automaticamente.",
+                "Extensão de sanção a pessoas jurídicas coligadas requer desconsideração formal da personalidade.",
+            ),
+            version="1.2.0",
+            last_sync_utc="2026-10-26T08:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="CGU_CNEP",
+            name="Cadastro Nacional de Empresas Punidas (CNEP - Lei Anticorrupção)",
+            governing_body="Controladoria-Geral da União (CGU)",
+            official_url="https://portaldatransparencia.gov.br/sancoes/cnep",
+            temporal_coverage="2014-2026",
+            geographic_coverage="Nacional",
+            sync_frequency="Diária",
+            key_fields=("codigoSancao", "cnpjSancionado", "razaoSocial", "valorMulta", "dataPublicacao"),
+            privacy_sanitizations=("Hash SHA-256 do lote bruto", "Validação de CNPJ de 14 dígitos"),
+            epistemic_limitations=(
+                "Acordos de leniência podem suspender efeitos sancionatórios.",
+                "Efeitos de sanções restritos aos termos exatos da decisão administrativa.",
+            ),
+            version="1.2.0",
+            last_sync_utc="2026-10-26T08:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="TSE_ELEICOES",
+            name="Repositório de Dados Eleitorais - Prestação de Contas de Campanha",
+            governing_body="Tribunal Superior Eleitoral (TSE)",
+            official_url="https://dadosabertos.tse.jus.br",
+            temporal_coverage="2018-2024",
+            geographic_coverage="Nacional (Eleições Gerais e Municipais)",
+            sync_frequency="Semanal / Periódica",
+            key_fields=("anoEleicao", "sqCandidato", "nomeCandidato", "cpfCnpjDoador", "nomeDoador", "valorDoacao"),
+            privacy_sanitizations=("Mascaramento estrito de CPF de doador PF", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Doações de campanha declaradas à Justiça Eleitoral constituem atos legais e legítimos.",
+                "Não há presunção automática de favorecimento indevido em contratações posteriores.",
+            ),
+            version="1.1.0",
+            last_sync_utc="2026-10-24T18:00:00Z",
+        ),
+        DataSourceSpecification(
+            source_id="RECEITA_FEDERAL_CNPJ",
+            name="Cadastro Nacional da Pessoa Jurídica (Dados Abertos CNPJ e QSA)",
+            governing_body="Receita Federal do Brasil (RFB)",
+            official_url="https://dados.gov.br/dados/conjuntos-dados/cadastro-nacional-da-pessoa-juridica-cnpj",
+            temporal_coverage="1960-2026",
+            geographic_coverage="Nacional",
+            sync_frequency="Mensal",
+            key_fields=("cnpj", "razaoSocial", "dataAbertura", "capitalSocial", "cnaePrincipal", "sociosQSA"),
+            privacy_sanitizations=("Mascaramento de CPF de sócios e administradores", "Hash SHA-256 do lote bruto"),
+            epistemic_limitations=(
+                "Defasagem natural entre alteração na Junta Comercial e publicação em dados abertos.",
+                "Participação de sócio como mero cotista sem gerência é legalmente admitida.",
+            ),
+            version="1.3.0",
+            last_sync_utc="2026-10-15T00:00:00Z",
+        ),
+    )
+
+
+

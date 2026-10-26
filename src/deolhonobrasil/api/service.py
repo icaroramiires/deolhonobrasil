@@ -29,7 +29,13 @@ from deolhonobrasil.governance.right_of_reply import (
     RightOfReplyStatus,
     RightOfReplySubmission,
 )
-from deolhonobrasil.pipeline.models import assert_non_accusatory_language
+from deolhonobrasil.pipeline.models import (
+    CivicWatchlistEvent,
+    CivicWatchlistSubscription,
+    VALID_WATCHLIST_FREQUENCIES,
+    assert_non_accusatory_language,
+    get_official_data_source_catalog,
+)
 from deolhonobrasil.pipeline.privacy import (
     normalize_and_protect_document,
     sanitize_untrusted_public_text,
@@ -55,6 +61,17 @@ class APIResponse:
     body: dict[str, object]
     headers: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_SECURITY_HEADERS))
     raw_html: str | None = None
+
+    def __iter__(self):
+        body_bytes = (
+            self.raw_html.encode("utf-8")
+            if self.raw_html
+            else json.dumps(self.body).encode("utf-8")
+        )
+        yield self.status_code
+        yield self.headers
+        yield body_bytes
+
 
 
 class SlidingWindowRateLimiter:
@@ -555,28 +572,207 @@ class CivicAuditAPIService:
             return 404, {"error": "Regra de análise não encontrada."}
         return 200, data
 
+    def get_sources_catalog(self) -> tuple[int, dict[str, object]]:
+        sources = get_official_data_source_catalog()
+        return 200, {
+            "total_sources": len(sources),
+            "sources": [
+                {
+                    "source_id": s.source_id,
+                    "name": s.name,
+                    "governing_body": s.governing_body,
+                    "official_url": s.official_url,
+                    "temporal_coverage": s.temporal_coverage,
+                    "geographic_coverage": s.geographic_coverage,
+                    "sync_frequency": s.sync_frequency,
+                    "key_fields": list(s.key_fields),
+                    "privacy_sanitizations": list(s.privacy_sanitizations),
+                    "epistemic_limitations": list(s.epistemic_limitations),
+                    "version": s.version,
+                    "last_sync_utc": s.last_sync_utc,
+                }
+                for s in sources
+            ],
+        }
+
+    def list_watchlists(self) -> tuple[int, dict[str, object]]:
+        subs = self.storage.list_watchlist_subscriptions()
+        events = self.storage.list_watchlist_events(limit=50)
+
+        unread_counts: dict[str, int] = {}
+        for evt in events:
+            if not evt.is_read:
+                unread_counts[evt.subscription_id] = unread_counts.get(evt.subscription_id, 0) + 1
+
+        serialized_subs = [
+            {
+                "subscription_id": s.subscription_id,
+                "entity_type": s.entity_type,
+                "entity_id": s.entity_id,
+                "entity_name": s.entity_name,
+                "monitored_events": list(s.monitored_events),
+                "frequency": s.frequency,
+                "channel": s.channel,
+                "is_active": s.is_active,
+                "created_at": s.created_at,
+                "sha256": s.sha256,
+                "unread_events_count": unread_counts.get(s.subscription_id, 0),
+            }
+            for s in subs
+        ]
+
+        serialized_events = [
+            {
+                "event_id": e.event_id,
+                "subscription_id": e.subscription_id,
+                "entity_type": e.entity_type,
+                "entity_id": e.entity_id,
+                "event_type": e.event_type,
+                "title": e.title,
+                "description": e.description,
+                "occurred_at": e.occurred_at,
+                "payload_sha256": e.payload_sha256,
+                "is_read": e.is_read,
+            }
+            for e in events
+        ]
+
+        return 200, {
+            "total": len(serialized_subs),
+            "subscriptions": serialized_subs,
+            "recent_events": serialized_events,
+        }
+
+    def create_watchlist(self, payload: dict[str, Any]) -> tuple[int, dict[str, object]]:
+        entity_type = str(payload.get("entity_type", "")).strip().upper()
+        entity_id = str(payload.get("entity_id", "")).strip()
+        entity_name = str(payload.get("entity_name", "")).strip()
+        events_raw = payload.get("monitored_events", ["NOVO_DOCUMENTO"])
+        if isinstance(events_raw, (list, tuple)):
+            monitored_events = tuple(str(e) for e in events_raw)
+        else:
+            monitored_events = ("NOVO_DOCUMENTO",)
+        frequency = str(payload.get("frequency", "DIARIA")).strip().upper()
+        channel = str(payload.get("channel", "NAVEGADOR_LOCAL")).strip().upper()
+
+        sub_id = f"sub-{uuid.uuid4().hex[:8]}"
+        now_utc = datetime.now(timezone.utc).isoformat()
+
+        try:
+            sub = CivicWatchlistSubscription(
+                subscription_id=sub_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                entity_name=entity_name or entity_id,
+                monitored_events=monitored_events,
+                frequency=frequency,
+                channel=channel,
+                is_active=True,
+                created_at=now_utc,
+            )
+        except ValueError as exc:
+            return 422, {"error": "VALIDATION_ERROR", "detail": str(exc)}
+
+        self.storage.upsert_watchlist_subscription(sub)
+        return 201, {
+            "subscription_id": sub.subscription_id,
+            "entity_type": sub.entity_type,
+            "entity_id": sub.entity_id,
+            "entity_name": sub.entity_name,
+            "monitored_events": list(sub.monitored_events),
+            "frequency": sub.frequency,
+            "channel": sub.channel,
+            "is_active": sub.is_active,
+            "created_at": sub.created_at,
+            "sha256": sub.sha256,
+        }
+
+    def update_watchlist(self, subscription_id: str, payload: dict[str, Any]) -> tuple[int, dict[str, object]]:
+        existing = self.storage.get_watchlist_subscription(subscription_id)
+        if not existing:
+            return 404, {"error": "Assinatura não encontrada."}
+
+        is_active = payload.get("is_active", existing.is_active)
+        frequency = payload.get("frequency")
+        if frequency is not None:
+            freq_str = str(frequency).strip().upper()
+            if freq_str not in VALID_WATCHLIST_FREQUENCIES:
+                return 422, {
+                    "error": "VALIDATION_ERROR",
+                    "detail": f"frequency inválida: {frequency}. Deve ser uma de: {VALID_WATCHLIST_FREQUENCIES}",
+                }
+            frequency = freq_str
+
+        try:
+            updated = self.storage.update_watchlist_subscription_status(
+                subscription_id=subscription_id,
+                is_active=bool(is_active),
+                frequency=frequency,
+            )
+        except ValueError as err:
+            return 422, {"error": "VALIDATION_ERROR", "detail": str(err)}
+
+        if not updated:
+            return 404, {"error": "Assinatura não encontrada."}
+
+        return 200, {
+            "subscription_id": updated.subscription_id,
+            "entity_type": updated.entity_type,
+            "entity_id": updated.entity_id,
+            "entity_name": updated.entity_name,
+            "monitored_events": list(updated.monitored_events),
+            "frequency": updated.frequency,
+            "channel": updated.channel,
+            "is_active": updated.is_active,
+            "created_at": updated.created_at,
+            "sha256": updated.sha256,
+        }
+
+    def delete_watchlist(self, subscription_id: str) -> tuple[int, dict[str, object]]:
+        deleted = self.storage.delete_watchlist_subscription(subscription_id)
+        if not deleted:
+            return 404, {"error": "Assinatura não encontrada."}
+        return 200, {"status": "deleted", "subscription_id": subscription_id}
+
+
 
 class CivicAuditHTTPApp:
     """Zero-dependency HTTP/WSGI dispatcher wrapping `CivicAuditAPIService`."""
 
-    def __init__(self, service: CivicAuditAPIService) -> None:
-        self.service = service
+    def __init__(self, service: CivicAuditAPIService | Any) -> None:
+        if isinstance(service, CivicAuditAPIService):
+            self.service = service
+        elif hasattr(service, "_connect"):
+            self.service = CivicAuditAPIService(storage=service)
+        else:
+            self.service = service
 
     def handle_request(
         self,
+        method: str = "GET",
+        path: str = "/",
+        body_or_query: Any = None,
         *,
-        method: str,
-        path: str,
         query_params: dict[str, str] | None = None,
         headers: dict[str, str] | None = None,
         json_body: dict[str, Any] | None = None,
         client_ip: str = "127.0.0.1",
     ) -> APIResponse:
+        if isinstance(body_or_query, (bytes, bytearray)):
+            if body_or_query and json_body is None:
+                try:
+                    json_body = json.loads(body_or_query.decode("utf-8"))
+                except Exception:
+                    pass
+        elif isinstance(body_or_query, dict) and json_body is None:
+            json_body = body_or_query
+
         q = dict(query_params or {})
         req_headers = {k.lower(): v for k, v in (headers or {}).items()}
         resp_headers = dict(DEFAULT_SECURITY_HEADERS)
 
         if not self.service.rate_limiter.allow_request(client_ip):
+
             resp_headers["Retry-After"] = str(self.service.rate_limiter.window_seconds)
             return APIResponse(
                 status_code=429,
@@ -719,6 +915,27 @@ class CivicAuditHTTPApp:
         if upper_method == "GET" and clean_path == "/api/v1/details/analysis":
             code, payload = self.service.get_analysis_detail(q.get("id", ""))
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/sources/catalog":
+            code, payload = self.service.get_sources_catalog()
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/watchlists":
+            code, payload = self.service.list_watchlists()
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/watchlists":
+            code, payload = self.service.create_watchlist(json_body or {})
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if clean_path.startswith("/api/v1/watchlists/"):
+            sub_id = clean_path.removeprefix("/api/v1/watchlists/").strip()
+            if upper_method in ("PUT", "PATCH"):
+                code, payload = self.service.update_watchlist(sub_id, json_body or {})
+                return APIResponse(status_code=code, body=payload, headers=resp_headers)
+            if upper_method == "DELETE":
+                code, payload = self.service.delete_watchlist(sub_id)
+                return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
         return APIResponse(
             status_code=404,

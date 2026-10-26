@@ -25,5 +25,8 @@ Este diretório registra as decisões arquiteturais estruturantes do projeto **D
 | [ADR-0017](0017-shared-company-address-and-collusion-risk.md) | Indícios de Conluio: Fornecedores com Mesmo Endereço Físico Cadastral | Aceito | 2026-10-25 | `SPEC-0017` |
 | [ADR-0018](0018-sanctioned-partner-qsa-crossmatch.md) | Burla à Sanção Administrativa: Sócios (QSA) com Sanção Ativa no CEIS/CNEP | Aceito | 2026-10-26 | `SPEC-0018` |
 | [ADR-0019](0019-civic-ui-and-design-system-integration.md) | Interface Web Cívica, Design System Unificado (Tokens, Temas, Responsividade P0) | Aceito | 2026-10-26 | `SPEC-0019` |
+| [ADR-0020](0020-civic-entity-profiles-and-detail-modals.md) | Perfis Cívicos de Entidades (Fornecedor, Mandatário e Órgão), Modais de Detalhe P0 e Linha do Tempo de Aditivos | Aceito | 2026-10-26 | `SPEC-0020` |
+| [ADR-0021](0021-civic-watchlists-and-source-catalog.md) | Sistema de Acompanhamentos Cívicos (Watchlists/Alertas de Eventos Públicos) e Catálogo Interativo de Metodologia e Fontes de Dados | Aceito | 2026-10-26 | `SPEC-0021` |
+
 
 

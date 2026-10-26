@@ -29,6 +29,8 @@ from deolhonobrasil.governance.right_of_reply import (
 from deolhonobrasil.pipeline.connectors.base import IngestionBatchResult
 from deolhonobrasil.pipeline.models import (
     CivicEntityProfile,
+    CivicWatchlistEvent,
+    CivicWatchlistSubscription,
     ContractTimelineEvent,
     CuratedCompanyRegistrationRecord,
     CuratedCorporateMemberRecord,
@@ -39,6 +41,7 @@ from deolhonobrasil.pipeline.models import (
     CuratedSanctionRecord,
     ExpenseDetailPayload,
     OfficialSource,
+    VALID_WATCHLIST_FREQUENCIES,
 )
 from deolhonobrasil.pipeline.privacy import compute_sha256_bytes
 
@@ -334,6 +337,39 @@ class CivicLakehouseStorage:
                     new_total_cents INTEGER NOT NULL,
                     provenance_sha256 TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS lakehouse_watchlist_subscriptions (
+                    subscription_id TEXT PRIMARY KEY,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    entity_name TEXT NOT NULL,
+                    monitored_events TEXT NOT NULL,
+                    frequency TEXT NOT NULL,
+                    channel TEXT NOT NULL,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    sha256 TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_watchlist_subs_entity 
+                    ON lakehouse_watchlist_subscriptions(entity_type, entity_id);
+
+                CREATE TABLE IF NOT EXISTS lakehouse_watchlist_events (
+                    event_id TEXT PRIMARY KEY,
+                    subscription_id TEXT NOT NULL,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    payload_sha256 TEXT NOT NULL,
+                    is_read INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY(subscription_id) REFERENCES lakehouse_watchlist_subscriptions(subscription_id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_watchlist_events_sub 
+                    ON lakehouse_watchlist_events(subscription_id, occurred_at);
                 """
             )
 
@@ -1573,4 +1609,207 @@ class CivicLakehouseStorage:
             "limitations_and_hypothesis_layer": "[LIMITAÇÃO E HIPÓTESE] Não constitui afirmação de dolo ou culpabilidade. A identificação de atipicidade destina-se exclusivamente à priorização da conferência preliminar e auditoria cívica.",
             "contestation_protocol_info": "Nos termos do Art. 5º, V da Constituição Federal e da governança híbrida, qualquer mandatário ou favorecido pode submeter documentação e esclarecimentos técnicos paritários via canal de Direito de Resposta.",
         }
+
+    def upsert_watchlist_subscription(
+        self, sub: CivicWatchlistSubscription
+    ) -> CivicWatchlistSubscription:
+        """Insere ou atualiza uma assinatura de acompanhamento no Lakehouse."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO lakehouse_watchlist_subscriptions (
+                    subscription_id, entity_type, entity_id, entity_name,
+                    monitored_events, frequency, channel, is_active, created_at, sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    sub.subscription_id,
+                    sub.entity_type,
+                    sub.entity_id,
+                    sub.entity_name,
+                    json.dumps(list(sub.monitored_events)),
+                    sub.frequency,
+                    sub.channel,
+                    1 if sub.is_active else 0,
+                    sub.created_at,
+                    sub.sha256,
+                ),
+            )
+        return sub
+
+    def get_watchlist_subscription(
+        self, subscription_id: str
+    ) -> CivicWatchlistSubscription | None:
+        """Recupera uma assinatura pelo seu ID."""
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT subscription_id, entity_type, entity_id, entity_name,
+                       monitored_events, frequency, channel, is_active, created_at, sha256
+                FROM lakehouse_watchlist_subscriptions
+                WHERE subscription_id = ?
+                """,
+                (subscription_id,),
+            ).fetchone()
+            if not row:
+                return None
+            return CivicWatchlistSubscription(
+                subscription_id=row["subscription_id"],
+                entity_type=row["entity_type"],
+                entity_id=row["entity_id"],
+                entity_name=row["entity_name"],
+                monitored_events=tuple(json.loads(row["monitored_events"])),
+                frequency=row["frequency"],
+                channel=row["channel"],
+                is_active=bool(row["is_active"]),
+                created_at=row["created_at"],
+                sha256=row["sha256"],
+            )
+
+    def list_watchlist_subscriptions(
+        self, only_active: bool = False
+    ) -> list[CivicWatchlistSubscription]:
+        """Lista assinaturas cadastradas no Lakehouse."""
+        query = """
+            SELECT subscription_id, entity_type, entity_id, entity_name,
+                   monitored_events, frequency, channel, is_active, created_at, sha256
+            FROM lakehouse_watchlist_subscriptions
+        """
+        params: list[object] = []
+        if only_active:
+            query += " WHERE is_active = 1"
+        query += " ORDER BY created_at DESC"
+
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [
+                CivicWatchlistSubscription(
+                    subscription_id=r["subscription_id"],
+                    entity_type=r["entity_type"],
+                    entity_id=r["entity_id"],
+                    entity_name=r["entity_name"],
+                    monitored_events=tuple(json.loads(r["monitored_events"])),
+                    frequency=r["frequency"],
+                    channel=r["channel"],
+                    is_active=bool(r["is_active"]),
+                    created_at=r["created_at"],
+                    sha256=r["sha256"],
+                )
+                for r in rows
+            ]
+
+    def update_watchlist_subscription_status(
+        self, subscription_id: str, is_active: bool, frequency: str | None = None
+    ) -> CivicWatchlistSubscription | None:
+        """Atualiza status de atividade ou frequência de uma assinatura."""
+        normalized_freq: str | None = None
+        if frequency is not None:
+            normalized_freq = str(frequency).strip().upper()
+            if normalized_freq not in VALID_WATCHLIST_FREQUENCIES:
+                raise ValueError(
+                    f"frequency inválida: {frequency}. Deve ser uma de: {VALID_WATCHLIST_FREQUENCIES}"
+                )
+
+        with self._connect() as conn:
+            if normalized_freq:
+                conn.execute(
+                    """
+                    UPDATE lakehouse_watchlist_subscriptions
+                    SET is_active = ?, frequency = ?
+                    WHERE subscription_id = ?
+                    """,
+                    (1 if is_active else 0, normalized_freq, subscription_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE lakehouse_watchlist_subscriptions
+                    SET is_active = ?
+                    WHERE subscription_id = ?
+                    """,
+                    (1 if is_active else 0, subscription_id),
+                )
+        return self.get_watchlist_subscription(subscription_id)
+
+    def delete_watchlist_subscription(self, subscription_id: str) -> bool:
+        """Remove uma assinatura e seus eventos associados."""
+        with self._connect() as conn:
+            conn.execute(
+                "DELETE FROM lakehouse_watchlist_events WHERE subscription_id = ?",
+                (subscription_id,),
+            )
+            cursor = conn.execute(
+                "DELETE FROM lakehouse_watchlist_subscriptions WHERE subscription_id = ?",
+                (subscription_id,),
+            )
+            return cursor.rowcount > 0
+
+    def insert_watchlist_event(self, event: CivicWatchlistEvent) -> CivicWatchlistEvent:
+        """Insere um novo evento notificado para acompanhamento."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO lakehouse_watchlist_events (
+                    event_id, subscription_id, entity_type, entity_id,
+                    event_type, title, description, occurred_at, payload_sha256, is_read
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.event_id,
+                    event.subscription_id,
+                    event.entity_type,
+                    event.entity_id,
+                    event.event_type,
+                    event.title,
+                    event.description,
+                    event.occurred_at,
+                    event.payload_sha256,
+                    1 if event.is_read else 0,
+                ),
+            )
+        return event
+
+    def list_watchlist_events(
+        self, subscription_id: str | None = None, limit: int = 50
+    ) -> list[CivicWatchlistEvent]:
+        """Lista eventos notificados no Lakehouse."""
+        query = """
+            SELECT event_id, subscription_id, entity_type, entity_id,
+                   event_type, title, description, occurred_at, payload_sha256, is_read
+            FROM lakehouse_watchlist_events
+        """
+        params: list[object] = []
+        if subscription_id:
+            query += " WHERE subscription_id = ?"
+            params.append(subscription_id)
+        query += " ORDER BY occurred_at DESC LIMIT ?"
+        params.append(limit)
+
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [
+                CivicWatchlistEvent(
+                    event_id=r["event_id"],
+                    subscription_id=r["subscription_id"],
+                    entity_type=r["entity_type"],
+                    entity_id=r["entity_id"],
+                    event_type=r["event_type"],
+                    title=r["title"],
+                    description=r["description"],
+                    occurred_at=r["occurred_at"],
+                    payload_sha256=r["payload_sha256"],
+                    is_read=bool(r["is_read"]),
+                )
+                for r in rows
+            ]
+
+    def mark_watchlist_event_read(self, event_id: str) -> bool:
+        """Marca um evento como lido."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE lakehouse_watchlist_events SET is_read = 1 WHERE event_id = ?",
+                (event_id,),
+            )
+            return cursor.rowcount > 0
+
 
