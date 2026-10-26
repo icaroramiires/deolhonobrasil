@@ -866,7 +866,77 @@
     .state-error { background: var(--neg-bg); color: var(--neg-fg); border-color: #fca5a5; }
     .state-incomplete { background: var(--warning-soft); color: var(--warning); border-color: var(--warning); }
     .state-unavailable { background: var(--warning-soft); color: var(--warning); border-color: var(--warning); }
-    .state-forbidden { background: var(--raised); color: var(--text); border-color: var(--border); }
+    /* Civic Modal Dialog & Amendments Timeline (SPEC-0020 / FR-044 / FR-045) */
+    .civic-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .civic-modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+      max-width: 680px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      position: relative;
+      outline: none;
+    }
+    .civic-modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-control);
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .civic-modal-close:hover, .civic-modal-close:focus {
+      color: var(--text);
+      border-color: var(--brand);
+    }
+    .timeline-list {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+      position: relative;
+      border-left: 2px solid var(--border);
+      margin-left: 8px;
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 20px;
+      padding-bottom: 16px;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -6px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brand);
+    }
   </style>
 </head>
 <body>
@@ -1720,6 +1790,22 @@
           </article>
         </div>
       </section>
+
+      <!-- SPEC-0020: P0 Detail Modals & Civic Entity Profiles Container -->
+      <div id="civic-modal" class="civic-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display:none;">
+        <div class="civic-modal-dialog" tabindex="-1">
+          <button type="button" class="civic-modal-close" aria-label="Fechar modal (Escape)" id="modal-close-btn">&times;</button>
+          <h2 id="modal-title">Detalhe da Entidade / Instrumento</h2>
+          <div id="modal-content-body">
+            <ol class="timeline-list">
+              <li class="timeline-item">
+                <div style="font-size: 12px; color: var(--muted);">Data do evento</div>
+                <div style="font-weight: 600;">Descrição do termo aditivo ou evento contratual</div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -2838,6 +2924,20 @@
         btn.textContent = 'Publicado lado a lado';
         btn.disabled = false;
       }
+    });
+
+    // Modal Accessibility & Escape dismiss (SPEC-0020 / FR-045)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('civic-modal');
+        if (modal && modal.style.display !== 'none') {
+          modal.style.display = 'none';
+        }
+      }
+    });
+    document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+      const modal = document.getElementById('civic-modal');
+      if (modal) modal.style.display = 'none';
     });
 
     // Initial render
