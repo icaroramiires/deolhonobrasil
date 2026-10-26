@@ -18,9 +18,11 @@ Uma busca de repositórios GitHub pelo termo `verbaclara` não retornou itens ne
 
 ## Decisão
 
-1. O produto deste repositório continua se chamando **De Olho no Brasil**.
-2. O nome Verba Clara não será usado em títulos, interface, pacote Python, imagens ou documentação institucional.
-3. Nenhuma alternativa de nome foi escolhida. Candidatos não pesquisados no INPI não são nomes aprovados.
+Em 26 de outubro de 2026, por volta das 19:15 (America/Sao_Paulo), o mantenedor confirmou: manter o nome **De Olho no Brasil**.
+
+1. O produto, o pacote Python `deolhonobrasil`, a interface, a API e a documentação institucional continuam com esse nome.
+2. Verba Clara não é nome deste software. A menção a esse termo fica restrita a este registro e aos documentos que explicam por que ele não foi adotado.
+3. Nenhuma alternativa de nome foi escolhida. Uma troca futura exige pedido explícito, nova busca de marca e domínio e atualização de `TRADEMARK.md`.
 
 ## Consequências
 
