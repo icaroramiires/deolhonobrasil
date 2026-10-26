@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 67
+MIN_EXPECTED_UNIT_TESTS = 117
 _IN_HARNESS_TEST_DISCOVERY = False
 
 
@@ -366,6 +366,8 @@ def verify_six_phase_loop(repo_root: Path) -> GateResult:
     if not _IN_HARNESS_TEST_DISCOVERY:
         _IN_HARNESS_TEST_DISCOVERY = True
         try:
+            if str(repo_root / ".agents" / "loop") not in sys.path:
+                sys.path.insert(0, str(repo_root / ".agents" / "loop"))
             loader = unittest.TestLoader()
             suite = loader.discover(start_dir=str(tests_dir), pattern="test_*.py")
             with contextlib.redirect_stdout(io.StringIO()):
@@ -435,6 +437,57 @@ def verify_six_phase_loop(repo_root: Path) -> GateResult:
     )
 
 
+def verify_security_and_loop_engine(repo_root: Path) -> GateResult:
+    """Gate 4 (DevSecOps Security Audit & Autonomous Engineering Loop Engine):
+    - Confirms scripts/run_loop.py, scripts/run_security_audit.py, and scripts/run_e2e_browser.py exist.
+    - Confirms .agents/loop/config.json, state.json, and engine.py exist.
+    - Confirms .agents/rules/engineering-loop.md, loop-run.md, and loop-gate-check.md exist.
+    - Runs security scan checks and confirms 0 Critical/High findings.
+    """
+    violations: list[str] = []
+
+    required_files = (
+        repo_root / "scripts" / "run_loop.py",
+        repo_root / "scripts" / "run_security_audit.py",
+        repo_root / "scripts" / "run_e2e_browser.py",
+        repo_root / ".agents" / "loop" / "config.json",
+        repo_root / ".agents" / "loop" / "state.json",
+        repo_root / ".agents" / "loop" / "engine.py",
+        repo_root / ".agents" / "rules" / "engineering-loop.md",
+        repo_root / ".agents" / "workflows" / "loop-run.md",
+        repo_root / ".agents" / "workflows" / "loop-gate-check.md",
+    )
+    for f in required_files:
+        if not f.exists():
+            violations.append(f"Missing loop engine or security artifact: {f.relative_to(repo_root)}")
+
+    # Execute security audit runner
+    sec_script = repo_root / "scripts" / "run_security_audit.py"
+    if sec_script.exists():
+        import subprocess
+        proc = subprocess.run(
+            [sys.executable, str(sec_script)],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if proc.returncode != 0:
+            violations.append(f"Security audit gate failed (exit code {proc.returncode}):\n{proc.stdout[-300:]}")
+
+    return GateResult(
+        gate_id="GATE-04-SECURITY-AND-LOOP",
+        gate_name="DevSecOps Security Audit & Autonomous Engineering Loop Engine",
+        ecc_skill="security-review + verification-loop",
+        passed=len(violations) == 0,
+        metrics={
+            "loop_artifacts_verified": len(required_files),
+            "security_audit_exit_code": 0 if len(violations) == 0 else 1,
+        },
+        violations=tuple(violations),
+    )
+
+
 def run_full_harness(
     repo_root: Path | None = None,
     checkpoint: int = 2,
@@ -452,7 +505,8 @@ def run_full_harness(
         g1 = verify_openspec_traceability(resolved_root)
         g2 = verify_gateguard_boundaries(resolved_root)
         g3 = verify_six_phase_loop(resolved_root)
-        last_gates = (g1, g2, g3)
+        g4 = verify_security_and_loop_engine(resolved_root)
+        last_gates = (g1, g2, g3, g4)
         trial_passes.append(all(g.passed for g in last_gates))
 
     pass_at_1 = 1.0 if trial_passes[0] else 0.0
