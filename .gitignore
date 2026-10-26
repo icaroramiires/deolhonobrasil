@@ -59,6 +59,9 @@ node_modules/
 .next/
 out/
 
+# Antigravity CLI project config
+.antigravitycli/
+
 # OS & IDEs
 .DS_Store
 .idea/

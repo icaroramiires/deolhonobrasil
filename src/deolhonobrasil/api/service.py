@@ -519,6 +519,42 @@ class CivicAuditAPIService:
             "items": [dict(r) for r in rows],
         }
 
+    def get_supplier_profile(self, doc: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_supplier_profile_data(doc)
+        if not data:
+            return 404, {"error": "Fornecedor não encontrado."}
+        return 200, data
+
+    def get_agent_profile(self, agent_id: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_agent_profile_data(agent_id)
+        if not data:
+            return 404, {"error": "Representante não encontrado."}
+        return 200, data
+
+    def get_organ_profile(self, organ_code: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_organ_profile_data(organ_code)
+        if not data:
+            return 404, {"error": "Órgão público não encontrado."}
+        return 200, data
+
+    def get_expense_detail(self, expense_id: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_expense_detail_data(expense_id)
+        if not data:
+            return 404, {"error": "Despesa não encontrada."}
+        return 200, data
+
+    def get_contract_detail(self, contract_id: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_contract_detail_data(contract_id)
+        if not data:
+            return 404, {"error": "Contrato não encontrado."}
+        return 200, data
+
+    def get_analysis_detail(self, rule_id: str) -> tuple[int, dict[str, object]]:
+        data = self.storage.get_analysis_detail_data(rule_id)
+        if not data:
+            return 404, {"error": "Regra de análise não encontrada."}
+        return 200, data
+
 
 class CivicAuditHTTPApp:
     """Zero-dependency HTTP/WSGI dispatcher wrapping `CivicAuditAPIService`."""
@@ -536,7 +572,7 @@ class CivicAuditHTTPApp:
         json_body: dict[str, Any] | None = None,
         client_ip: str = "127.0.0.1",
     ) -> APIResponse:
-        q = query_params or {}
+        q = dict(query_params or {})
         req_headers = {k.lower(): v for k, v in (headers or {}).items()}
         resp_headers = dict(DEFAULT_SECURITY_HEADERS)
 
@@ -552,7 +588,14 @@ class CivicAuditHTTPApp:
             )
 
         upper_method = method.upper()
-        clean_path = path.rstrip("/") or "/"
+        if "?" in path:
+            path_part, qs_part = path.split("?", 1)
+            clean_path = path_part.rstrip("/") or "/"
+            if not query_params:
+                from urllib.parse import parse_qs
+                q = {k: v[0] for k, v in parse_qs(qs_part).items() if v}
+        else:
+            clean_path = path.rstrip("/") or "/"
 
         if upper_method == "GET" and clean_path in ("/", "/index.html", "/wireframe_de_olho_no_brasil.html"):
             from pathlib import Path
@@ -651,6 +694,30 @@ class CivicAuditHTTPApp:
                 limit=_safe_int(q.get("limit"), 50),
                 offset=_safe_int(q.get("offset"), 0),
             )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/entities/supplier":
+            code, payload = self.service.get_supplier_profile(q.get("doc", ""))
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/entities/agent":
+            code, payload = self.service.get_agent_profile(q.get("id", ""))
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/entities/organ":
+            code, payload = self.service.get_organ_profile(q.get("id", ""))
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/details/expense":
+            code, payload = self.service.get_expense_detail(q.get("id", ""))
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/details/contract":
+            code, payload = self.service.get_contract_detail(q.get("id", ""))
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/details/analysis":
+            code, payload = self.service.get_analysis_detail(q.get("id", ""))
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
         return APIResponse(

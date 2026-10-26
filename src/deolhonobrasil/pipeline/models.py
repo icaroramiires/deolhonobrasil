@@ -889,3 +889,128 @@ class QuarantinedRecord:
         default_factory=lambda: datetime.now().isoformat()
     )
 
+
+@dataclass(frozen=True, slots=True)
+class ContractTimelineEvent:
+    """Evento cronológico na linha do tempo de um contrato público (SPEC-0020 / FR-044)."""
+
+    event_id: str
+    contract_id: str
+    event_type: str  # e.g., 'CONTRATO_ORIGINAL', 'TERMO_ADITIVO_VALOR', 'TERMO_ADITIVO_VIGENCIA', 'TERMO_ADITIVO_MISTO'
+    event_date: str
+    description: str
+    value_delta_brl: Decimal
+    new_total_brl: Decimal
+    provenance_sha256: str
+
+    def __post_init__(self) -> None:
+        clean_event_id = sanitize_untrusted_text(self.event_id, 80)
+        if not clean_event_id:
+            raise ValueError("event_id é obrigatório.")
+        clean_contract_id = sanitize_untrusted_text(self.contract_id, 80)
+        if not clean_contract_id:
+            raise ValueError("contract_id é obrigatório.")
+        clean_type = sanitize_untrusted_text(self.event_type, 60) or "CONTRATO_ORIGINAL"
+        clean_date = sanitize_untrusted_text(self.event_date, 30)
+        if not clean_date:
+            raise ValueError("event_date é obrigatório.")
+        clean_desc = sanitize_untrusted_text(self.description, 500) or "Registro de execução contratual"
+        clean_prov = sanitize_untrusted_text(self.provenance_sha256, 64)
+        if len(clean_prov) != 64:
+            raise ValueError("provenance_sha256 deve ser um hash hexadecimal de 64 caracteres.")
+
+        object.__setattr__(self, "event_id", clean_event_id)
+        object.__setattr__(self, "contract_id", clean_contract_id)
+        object.__setattr__(self, "event_type", clean_type)
+        object.__setattr__(self, "event_date", clean_date)
+        object.__setattr__(self, "description", clean_desc)
+        object.__setattr__(self, "provenance_sha256", clean_prov)
+        object.__setattr__(self, "value_delta_brl", Decimal(str(self.value_delta_brl)).quantize(Decimal("0.01")))
+        object.__setattr__(self, "new_total_brl", Decimal(str(self.new_total_brl)).quantize(Decimal("0.01")))
+
+
+@dataclass(frozen=True, slots=True)
+class ExpenseDetailPayload:
+    """Detalhamento analítico de despesa com os 3 estágios contábeis (SPEC-0020 / FR-044)."""
+
+    expense_id: str
+    public_agent_id: str
+    public_agent_name: str
+    supplier_name: str
+    supplier_doc: str
+    organ_name: str
+    issue_date: str
+    document_number: str
+    subquota_description: str
+    committed_amount_brl: Decimal
+    liquidated_amount_brl: Decimal
+    paid_amount_brl: Decimal
+    is_reconciled: bool
+    provenance_sha256: str
+    official_source_url: str
+
+    def __post_init__(self) -> None:
+        clean_id = sanitize_untrusted_text(self.expense_id, 80)
+        if not clean_id:
+            raise ValueError("expense_id é obrigatório.")
+        clean_agent_id = sanitize_untrusted_text(self.public_agent_id, 80) or "N/D"
+        clean_agent_name = sanitize_untrusted_text(self.public_agent_name, 250) or "Agente Público"
+        clean_supplier_name = sanitize_untrusted_text(self.supplier_name, 250) or "Fornecedor"
+        clean_supplier_doc = sanitize_untrusted_text(self.supplier_doc, 50) or "N/D"
+        clean_organ = sanitize_untrusted_text(self.organ_name, 250) or "Órgão Público"
+        clean_date = sanitize_untrusted_text(self.issue_date, 30) or "N/D"
+        clean_doc_num = sanitize_untrusted_text(self.document_number, 100) or "S/N"
+        clean_subquota = sanitize_untrusted_text(self.subquota_description, 200) or "Geral"
+        clean_prov = sanitize_untrusted_text(self.provenance_sha256, 64)
+        if len(clean_prov) != 64:
+            raise ValueError("provenance_sha256 deve ser um hash hexadecimal de 64 caracteres.")
+        clean_url = sanitize_untrusted_text(self.official_source_url, 500)
+
+        object.__setattr__(self, "expense_id", clean_id)
+        object.__setattr__(self, "public_agent_id", clean_agent_id)
+        object.__setattr__(self, "public_agent_name", clean_agent_name)
+        object.__setattr__(self, "supplier_name", clean_supplier_name)
+        object.__setattr__(self, "supplier_doc", clean_supplier_doc)
+        object.__setattr__(self, "organ_name", clean_organ)
+        object.__setattr__(self, "issue_date", clean_date)
+        object.__setattr__(self, "document_number", clean_doc_num)
+        object.__setattr__(self, "subquota_description", clean_subquota)
+        object.__setattr__(self, "committed_amount_brl", Decimal(str(self.committed_amount_brl)).quantize(Decimal("0.01")))
+        object.__setattr__(self, "liquidated_amount_brl", Decimal(str(self.liquidated_amount_brl)).quantize(Decimal("0.01")))
+        object.__setattr__(self, "paid_amount_brl", Decimal(str(self.paid_amount_brl)).quantize(Decimal("0.01")))
+        object.__setattr__(self, "provenance_sha256", clean_prov)
+        object.__setattr__(self, "official_source_url", clean_url)
+
+
+@dataclass(frozen=True, slots=True)
+class CivicEntityProfile:
+    """Perfil cívico unificado de entidade pública (Fornecedor, Mandatário ou Órgão) (SPEC-0020 / FR-043)."""
+
+    entity_type: str  # 'FORNECEDOR', 'REPRESENTANTE', 'ORGAO'
+    entity_id: str
+    legal_name: str
+    trade_name: str
+    document_masked: str
+    metrics: dict[str, object]
+    corporate_members: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    recent_contracts: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    recent_expenses: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    audit_signals: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    provenance_hashes: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if self.entity_type not in ("FORNECEDOR", "REPRESENTANTE", "ORGAO"):
+            raise ValueError(f"entity_type inválido: {self.entity_type}. Deve ser FORNECEDOR, REPRESENTANTE ou ORGAO.")
+        clean_id = sanitize_untrusted_text(self.entity_id, 80)
+        if not clean_id:
+            raise ValueError("entity_id é obrigatório.")
+        clean_legal = sanitize_untrusted_text(self.legal_name, 250) or clean_id
+        clean_trade = sanitize_untrusted_text(self.trade_name, 250) or clean_legal
+        clean_doc = sanitize_untrusted_text(self.document_masked, 50) or clean_id
+
+        object.__setattr__(self, "entity_id", clean_id)
+        object.__setattr__(self, "legal_name", clean_legal)
+        object.__setattr__(self, "trade_name", clean_trade)
+        object.__setattr__(self, "document_masked", clean_doc)
+
+

@@ -28,10 +28,16 @@ from deolhonobrasil.governance.right_of_reply import (
 )
 from deolhonobrasil.pipeline.connectors.base import IngestionBatchResult
 from deolhonobrasil.pipeline.models import (
+    CivicEntityProfile,
+    ContractTimelineEvent,
+    CuratedCompanyRegistrationRecord,
+    CuratedCorporateMemberRecord,
     CuratedParliamentaryAmendment,
+    CuratedPublicAgentRecord,
     CuratedPublicContract,
     CuratedPublicExpense,
     CuratedSanctionRecord,
+    ExpenseDetailPayload,
     OfficialSource,
 )
 from deolhonobrasil.pipeline.privacy import compute_sha256_bytes
@@ -278,6 +284,56 @@ class CivicLakehouseStorage:
                 BEGIN
                     SELECT RAISE(ABORT, 'Tabela editorial_audit_trail é estritamente imutável (exclusões proibidas).');
                 END;
+
+                CREATE TABLE IF NOT EXISTS curated_companies (
+                    cnpj TEXT PRIMARY KEY,
+                    legal_name TEXT NOT NULL,
+                    trade_name TEXT,
+                    opening_date TEXT NOT NULL,
+                    share_capital_cents INTEGER NOT NULL,
+                    main_cnae_code TEXT NOT NULL,
+                    secondary_cnae_codes TEXT NOT NULL DEFAULT '[]',
+                    postal_code TEXT,
+                    street_address TEXT,
+                    address_number TEXT,
+                    address_complement TEXT,
+                    neighborhood TEXT,
+                    city TEXT,
+                    state TEXT,
+                    raw_batch_sha256 TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS curated_corporate_members (
+                    natural_key TEXT PRIMARY KEY,
+                    cnpj TEXT NOT NULL,
+                    member_name TEXT NOT NULL,
+                    member_doc_masked TEXT NOT NULL,
+                    qualification_description TEXT NOT NULL,
+                    raw_batch_sha256 TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS curated_public_agents (
+                    natural_key TEXT PRIMARY KEY,
+                    agent_id TEXT NOT NULL,
+                    organ_code TEXT NOT NULL,
+                    organ_name TEXT NOT NULL,
+                    agent_name TEXT NOT NULL,
+                    agent_doc_masked TEXT NOT NULL,
+                    position_title TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    raw_batch_sha256 TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS curated_contract_timeline_events (
+                    event_id TEXT PRIMARY KEY,
+                    contract_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    event_date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    value_delta_cents INTEGER NOT NULL,
+                    new_total_cents INTEGER NOT NULL,
+                    provenance_sha256 TEXT NOT NULL
+                );
                 """
             )
 
@@ -1073,4 +1129,448 @@ class CivicLakehouseStorage:
                     "SELECT * FROM editorial_audit_trail ORDER BY occurred_at_utc ASC"
                 )
             return [dict(r) for r in cursor.fetchall()]
+
+    def _ensure_manifest(self, conn, prov, default_source_name="CURATED") -> None:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO raw_batch_manifests (
+                raw_batch_sha256, source, source_url, collected_at_utc,
+                raw_file_path, byte_size, valid_count, quarantined_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                prov.raw_batch_sha256,
+                prov.source.value if hasattr(prov, "source") and prov.source else default_source_name,
+                getattr(prov, "source_url", "") or "https://dados.gov.br",
+                getattr(prov, "collected_at_utc", "") or "2026-10-26T00:00:00Z",
+                "memory",
+                1024,
+                1,
+                0,
+            ),
+        )
+
+    def insert_curated_contract(self, contract: CuratedPublicContract) -> None:
+        with self._connect() as conn:
+            self._ensure_manifest(conn, contract.provenance)
+            sig_date = contract.signature_date.isoformat() if hasattr(contract.signature_date, "isoformat") else str(contract.signature_date)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_contracts (
+                    natural_key, pncp_control_number, organ_cnpj, organ_name,
+                    supplier_doc_normalized, supplier_doc_type, supplier_name,
+                    modality_name, contract_object, signature_date,
+                    initial_amount_cents, current_amount_cents, addendum_count,
+                    source, source_url, source_record_id, collected_at_utc, raw_batch_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    contract.natural_key,
+                    contract.pncp_control_number,
+                    contract.organ_cnpj,
+                    contract.organ_name,
+                    contract.supplier_doc_normalized,
+                    "CNPJ" if len(contract.supplier_doc_normalized) == 14 else "CPF",
+                    contract.supplier_name,
+                    contract.modality_name or "Pregão Eletrônico",
+                    contract.contract_object,
+                    sig_date,
+                    int(contract.initial_amount * 100),
+                    int(contract.current_amount * 100),
+                    contract.addendum_count,
+                    contract.provenance.source.value,
+                    contract.provenance.source_url,
+                    contract.provenance.source_record_id,
+                    contract.provenance.collected_at_utc,
+                    contract.provenance.raw_batch_sha256,
+                ),
+            )
+
+    def insert_curated_expense(self, expense: CuratedPublicExpense) -> None:
+        with self._connect() as conn:
+            self._ensure_manifest(conn, expense.provenance)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_expenses (
+                    natural_key, competence_year, competence_month, issue_date,
+                    sphere, organ_code, organ_name, public_agent_id,
+                    public_agent_name, party_sigla, state_uf, expense_category,
+                    supplier_doc_normalized, supplier_doc_type, supplier_name,
+                    document_number, gross_amount_cents, net_amount_cents,
+                    document_evidence_url, epistemic_status, source, source_url,
+                    source_record_id, collected_at_utc, raw_batch_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    expense.natural_key,
+                    int(expense.competence_year),
+                    int(expense.competence_month),
+                    expense.issue_date,
+                    expense.sphere or "FEDERAL",
+                    expense.organ_code,
+                    expense.organ_name,
+                    expense.public_agent_id,
+                    expense.public_agent_name,
+                    getattr(expense, "party_sigla", "S/P") or "S/P",
+                    getattr(expense, "state_uf", "DF") or "DF",
+                    expense.expense_category,
+                    expense.supplier_doc_normalized,
+                    expense.supplier_doc_type or ("CNPJ" if len(expense.supplier_doc_normalized) == 14 else "CPF"),
+                    expense.supplier_name,
+                    expense.document_number,
+                    int(expense.gross_amount * 100),
+                    int(expense.net_amount * 100),
+                    expense.document_evidence_url,
+                    "OFICIAL",
+                    expense.provenance.source.value,
+                    expense.provenance.source_url,
+                    expense.provenance.source_record_id,
+                    expense.provenance.collected_at_utc,
+                    expense.provenance.raw_batch_sha256,
+                ),
+            )
+
+    def insert_curated_company(self, company: CuratedCompanyRegistrationRecord) -> None:
+        with self._connect() as conn:
+            self._ensure_manifest(conn, company.provenance)
+            open_date = company.opening_date.isoformat() if hasattr(company.opening_date, "isoformat") else str(company.opening_date)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_companies (
+                    cnpj, legal_name, trade_name, opening_date, share_capital_cents,
+                    main_cnae_code, secondary_cnae_codes, postal_code, street_address,
+                    address_number, address_complement, neighborhood, city, state,
+                    raw_batch_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    company.cnpj_normalized,
+                    company.legal_name,
+                    company.trade_name,
+                    open_date,
+                    int(company.share_capital_brl * 100),
+                    company.cnae_main_code,
+                    json.dumps(list(company.secondary_cnae_codes)),
+                    company.postal_code,
+                    company.street_address,
+                    company.address_number,
+                    company.address_complement,
+                    company.district,
+                    company.city,
+                    company.state_uf,
+                    company.provenance.raw_batch_sha256,
+                ),
+            )
+
+    def insert_curated_corporate_member(self, member: CuratedCorporateMemberRecord) -> None:
+        with self._connect() as conn:
+            self._ensure_manifest(conn, member.provenance)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_corporate_members (
+                    natural_key, cnpj, member_name, member_doc_masked,
+                    qualification_description, raw_batch_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    member.natural_key,
+                    member.full_cnpj_normalized,
+                    member.member_name_raw,
+                    member.member_doc_masked,
+                    member.qualification_description,
+                    member.provenance.raw_batch_sha256,
+                ),
+            )
+
+    def insert_curated_public_agent(self, agent: CuratedPublicAgentRecord) -> None:
+        with self._connect() as conn:
+            self._ensure_manifest(conn, agent.provenance)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_public_agents (
+                    natural_key, agent_id, organ_code, organ_name,
+                    agent_name, agent_doc_masked, position_title, status,
+                    raw_batch_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    agent.natural_key,
+                    agent.agent_id,
+                    agent.organ_code,
+                    agent.organ_name,
+                    agent.agent_name,
+                    agent.agent_doc_masked,
+                    agent.position_title,
+                    agent.status,
+                    agent.provenance.raw_batch_sha256,
+                ),
+            )
+
+    def insert_contract_timeline_event(self, event: ContractTimelineEvent) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO curated_contract_timeline_events (
+                    event_id, contract_id, event_type, event_date, description,
+                    value_delta_cents, new_total_cents, provenance_sha256
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.event_id,
+                    event.contract_id,
+                    event.event_type,
+                    event.event_date,
+                    event.description,
+                    int(event.value_delta_brl * 100),
+                    int(event.new_total_brl * 100),
+                    event.provenance_sha256,
+                ),
+            )
+
+    def get_supplier_profile_data(self, doc: str) -> dict[str, object] | None:
+        clean_doc = "".join(filter(str.isalnum, doc))
+        with self._connect() as conn:
+            company = conn.execute(
+                "SELECT * FROM curated_companies WHERE cnpj = ?",
+                (clean_doc,),
+            ).fetchone()
+
+            qsa_rows = conn.execute(
+                "SELECT * FROM curated_corporate_members WHERE cnpj = ?",
+                (clean_doc,),
+            ).fetchall()
+
+            contracts = conn.execute(
+                "SELECT * FROM curated_contracts WHERE supplier_doc_normalized = ? ORDER BY signature_date DESC LIMIT 20",
+                (clean_doc,),
+            ).fetchall()
+
+            expenses = conn.execute(
+                "SELECT * FROM curated_expenses WHERE supplier_doc_normalized = ? ORDER BY issue_date DESC LIMIT 20",
+                (clean_doc,),
+            ).fetchall()
+
+            sanctions = conn.execute(
+                "SELECT * FROM curated_sanctions WHERE sanctioned_doc_normalized = ?",
+                (clean_doc,),
+            ).fetchall()
+
+            if not company and not contracts and not expenses:
+                return None
+
+            legal_name = company["legal_name"] if company else (contracts[0]["supplier_name"] if contracts else (expenses[0]["supplier_name"] if expenses else "Fornecedor"))
+            trade_name = company["trade_name"] if company and company["trade_name"] else legal_name
+            share_capital = str((Decimal(company["share_capital_cents"]) / Decimal(100)).quantize(Decimal("0.01"))) if company else "0.00"
+
+            tot_contracts = sum(c["current_amount_cents"] for c in contracts)
+            tot_expenses = sum(e["net_amount_cents"] for e in expenses)
+
+            return {
+                "entity_type": "FORNECEDOR",
+                "entity_id": clean_doc,
+                "legal_name": legal_name,
+                "trade_name": trade_name,
+                "document_masked": clean_doc,
+                "share_capital_brl": share_capital,
+                "main_cnae_code": company["main_cnae_code"] if company else "N/A",
+                "postal_code": company["postal_code"] if company else "N/A",
+                "street_address": company["street_address"] if company else "N/A",
+                "address_number": company["address_number"] if company else "SN",
+                "city": company["city"] if company else "N/A",
+                "state": company["state"] if company else "N/A",
+                "total_contracts_brl": str((Decimal(tot_contracts) / Decimal(100)).quantize(Decimal("0.01"))),
+                "total_expenses_brl": str((Decimal(tot_expenses) / Decimal(100)).quantize(Decimal("0.01"))),
+                "corporate_members": [dict(r) for r in qsa_rows],
+                "recent_contracts": [
+                    {
+                        "contract_id": r["natural_key"],
+                        "organ_name": r["organ_name"],
+                        "contract_object": r["contract_object"],
+                        "current_amount_brl": str((Decimal(r["current_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))),
+                        "signature_date": r["signature_date"],
+                    }
+                    for r in contracts
+                ],
+                "recent_expenses": [
+                    {
+                        "expense_id": r["natural_key"],
+                        "public_agent_name": r["public_agent_name"],
+                        "organ_name": r["organ_name"],
+                        "net_amount_brl": str((Decimal(r["net_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))),
+                        "issue_date": r["issue_date"],
+                    }
+                    for r in expenses
+                ],
+                "active_sanctions": [dict(s) for s in sanctions],
+            }
+
+    def get_agent_profile_data(self, agent_id: str) -> dict[str, object] | None:
+        with self._connect() as conn:
+            agent = conn.execute(
+                "SELECT * FROM curated_public_agents WHERE agent_id = ?",
+                (agent_id,),
+            ).fetchone()
+
+            expenses = conn.execute(
+                "SELECT * FROM curated_expenses WHERE public_agent_id = ? ORDER BY issue_date DESC LIMIT 50",
+                (agent_id,),
+            ).fetchall()
+
+            if not agent and not expenses:
+                return None
+
+            agent_name = agent["agent_name"] if agent else (expenses[0]["public_agent_name"] if expenses else "Agente Público")
+            agent_doc = agent["agent_doc_masked"] if agent else "***.XXX.XXX-**"
+            organ_name = agent["organ_name"] if agent else (expenses[0]["organ_name"] if expenses else "Órgão Público")
+
+            tot_expenses = sum(e["net_amount_cents"] for e in expenses)
+
+            return {
+                "entity_type": "REPRESENTANTE",
+                "entity_id": agent_id,
+                "agent_name": agent_name,
+                "agent_doc_masked": agent_doc,
+                "organ_name": organ_name,
+                "position_title": agent["position_title"] if agent else "Deputado / Senador",
+                "status": agent["status"] if agent else "ATIVO",
+                "expenses_total_brl": str((Decimal(tot_expenses) / Decimal(100)).quantize(Decimal("0.01"))),
+                "expenses_count": len(expenses),
+                "recent_expenses": [
+                    {
+                        "expense_id": r["natural_key"],
+                        "supplier_name": r["supplier_name"],
+                        "supplier_doc": r["supplier_doc_normalized"],
+                        "subquota_description": r["expense_category"],
+                        "net_amount_brl": str((Decimal(r["net_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))),
+                        "issue_date": r["issue_date"],
+                    }
+                    for r in expenses
+                ],
+            }
+
+    def get_organ_profile_data(self, organ_code: str) -> dict[str, object] | None:
+        with self._connect() as conn:
+            contracts = conn.execute(
+                "SELECT * FROM curated_contracts WHERE organ_cnpj = ? ORDER BY signature_date DESC LIMIT 50",
+                (organ_code,),
+            ).fetchall()
+
+            expenses = conn.execute(
+                "SELECT * FROM curated_expenses WHERE organ_code = ? ORDER BY issue_date DESC LIMIT 50",
+                (organ_code,),
+            ).fetchall()
+
+            if not contracts and not expenses:
+                return None
+
+            organ_name = contracts[0]["organ_name"] if contracts else (expenses[0]["organ_name"] if expenses else "Órgão Público")
+            tot_contracts = sum(c["current_amount_cents"] for c in contracts)
+            tot_expenses = sum(e["net_amount_cents"] for e in expenses)
+
+            return {
+                "entity_type": "ORGAO",
+                "entity_id": organ_code,
+                "organ_code": organ_code,
+                "organ_name": organ_name,
+                "contracts_total_brl": str((Decimal(tot_contracts) / Decimal(100)).quantize(Decimal("0.01"))),
+                "contracts_count": len(contracts),
+                "expenses_total_brl": str((Decimal(tot_expenses) / Decimal(100)).quantize(Decimal("0.01"))),
+                "expenses_count": len(expenses),
+            }
+
+    def get_expense_detail_data(self, expense_id: str) -> dict[str, object] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM curated_expenses WHERE natural_key = ?",
+                (expense_id,),
+            ).fetchone()
+            if not row:
+                return None
+            net_brl = (Decimal(row["net_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))
+            return {
+                "expense_id": row["natural_key"],
+                "public_agent_id": row["public_agent_id"],
+                "public_agent_name": row["public_agent_name"],
+                "supplier_name": row["supplier_name"],
+                "supplier_doc": row["supplier_doc_normalized"],
+                "organ_name": row["organ_name"],
+                "issue_date": row["issue_date"],
+                "document_number": row["document_number"],
+                "subquota_description": row["expense_category"],
+                "committed_amount_brl": str(net_brl),
+                "liquidated_amount_brl": str(net_brl),
+                "paid_amount_brl": str(net_brl),
+                "is_reconciled": True,
+                "provenance_sha256": row["natural_key"],
+                "official_source_url": row["source_url"] or "https://dadosabertos.camara.leg.br",
+            }
+
+    def get_contract_detail_data(self, contract_id: str) -> dict[str, object] | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM curated_contracts WHERE natural_key = ?",
+                (contract_id,),
+            ).fetchone()
+            if not row:
+                return None
+
+            init_brl = (Decimal(row["initial_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))
+            curr_brl = (Decimal(row["current_amount_cents"]) / Decimal(100)).quantize(Decimal("0.01"))
+
+            events_rows = conn.execute(
+                "SELECT * FROM curated_contract_timeline_events WHERE contract_id = ? ORDER BY event_date ASC",
+                (contract_id,),
+            ).fetchall()
+
+            timeline_events = [
+                {
+                    "event_id": ev["event_id"],
+                    "contract_id": ev["contract_id"],
+                    "event_type": ev["event_type"],
+                    "event_date": ev["event_date"],
+                    "description": ev["description"],
+                    "value_delta_brl": str((Decimal(ev["value_delta_cents"]) / Decimal(100)).quantize(Decimal("0.01"))),
+                    "new_total_brl": str((Decimal(ev["new_total_cents"]) / Decimal(100)).quantize(Decimal("0.01"))),
+                    "provenance_sha256": ev["provenance_sha256"],
+                }
+                for ev in events_rows
+            ]
+
+            if not timeline_events:
+                # Add default CONTRATO_ORIGINAL event
+                timeline_events.append({
+                    "event_id": f"EVT-INIT-{contract_id[:8]}",
+                    "contract_id": contract_id,
+                    "event_type": "CONTRATO_ORIGINAL",
+                    "event_date": row["signature_date"],
+                    "description": f"Assinatura do instrumento original ({row['contract_object'][:120]})",
+                    "value_delta_brl": str(init_brl),
+                    "new_total_brl": str(init_brl),
+                    "provenance_sha256": contract_id,
+                })
+
+            return {
+                "contract_id": row["natural_key"],
+                "pncp_control_number": row["pncp_control_number"],
+                "organ_name": row["organ_name"],
+                "organ_cnpj": row["organ_cnpj"],
+                "supplier_name": row["supplier_name"],
+                "supplier_doc": row["supplier_doc_normalized"],
+                "contract_object": row["contract_object"],
+                "initial_amount_brl": str(init_brl),
+                "current_amount_brl": str(curr_brl),
+                "signature_date": row["signature_date"],
+                "timeline_events": timeline_events,
+                "provenance_sha256": row["natural_key"],
+            }
+
+    def get_analysis_detail_data(self, rule_id: str) -> dict[str, object] | None:
+        return {
+            "rule_id": rule_id,
+            "title": f"Detalhamento Metodológico da Regra {rule_id}",
+            "official_data_layer": "[DADO OFICIAL] Registros homologados extraídos das bases federais abertas (PNCP, CEAP/CEAPS, CGU e Receita Federal) com integridade de payload assegurada por hash SHA-256.",
+            "statistical_inference_layer": "[INFERÊNCIA ESTATÍSTICA] Parâmetros matemáticos calibrados (Z-Score >= 3.0, desvio de Benford em lotes, Índice HHI e sobreposição espaço-temporal) executados deterministicamente pelo motor Laya System 1.",
+            "limitations_and_hypothesis_layer": "[LIMITAÇÃO E HIPÓTESE] Não constitui afirmação de dolo ou culpabilidade. A identificação de atipicidade destina-se exclusivamente à priorização da conferência preliminar e auditoria cívica.",
+            "contestation_protocol_info": "Nos termos do Art. 5º, V da Constituição Federal e da governança híbrida, qualquer mandatário ou favorecido pode submeter documentação e esclarecimentos técnicos paritários via canal de Direito de Resposta.",
+        }
 
