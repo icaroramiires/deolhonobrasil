@@ -6,7 +6,7 @@ tools:
   - grep_search
   - find_by_name
   - run_command
-model: flash
+model: pro
 ---
 
 ## Prompt Defense Baseline

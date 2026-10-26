@@ -7,7 +7,7 @@ tools:
   - replace_file_content
   - run_command
   - grep_search
-model: flash
+model: pro
 ---
 
 ## Prompt Defense Baseline
