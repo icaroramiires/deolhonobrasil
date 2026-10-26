@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 1.9.0  
-**Status:** 100% Verificada (`SPEC-0001..0012`, `87/87` testes, `82/82` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 2.0.0  
+**Status:** 100% Verificada (`SPEC-0001..0018` + Engineering Loop Harness, `117/117` testes, `106/106` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -21,6 +21,12 @@
 | **`SPEC-0010`** | [`docs/specs/SPEC-0010-duplicate-and-overlap-expenses/`](../specs/SPEC-0010-duplicate-and-overlap-expenses/spec.md) | `DONB-2`, `DONB-17` (`TASK-1001..1004`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0011`** | [`docs/specs/SPEC-0011-temporal-recess-and-holiday-expenses/`](../specs/SPEC-0011-temporal-recess-and-holiday-expenses/spec.md) | `DONB-2`, `DONB-18` (`TASK-1101..1104`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0012`** | [`docs/specs/SPEC-0012-electoral-campaign-donations/`](../specs/SPEC-0012-electoral-campaign-donations/spec.md) | `DONB-2`, `DONB-19` (`TASK-1201..1204`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0013`** | [`docs/specs/SPEC-0013-corporate-members-and-qsa-crossmatch/`](../specs/SPEC-0013-corporate-members-and-qsa-crossmatch/spec.md) | `DONB-2`, `DONB-20` (`TASK-1301..1304`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0014`** | [`docs/specs/SPEC-0014-company-age-and-capital-risk-indicators/`](../specs/SPEC-0014-company-age-and-capital-risk-indicators/spec.md) | `DONB-2`, `DONB-21` (`TASK-1401..1404`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0015`** | [`docs/specs/SPEC-0015-cnae-contract-incompatibility/`](../specs/SPEC-0015-cnae-contract-incompatibility/spec.md) | `DONB-2`, `DONB-22` (`TASK-1501..1504`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0016`** | [`docs/specs/SPEC-0016-public-agent-supplier-crossmatch/`](../specs/SPEC-0016-public-agent-supplier-crossmatch/spec.md) | `DONB-2`, `DONB-23` (`TASK-1601..1604`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0017`** | [`docs/specs/SPEC-0017-shared-company-address-crossmatch/`](../specs/SPEC-0017-shared-company-address-crossmatch/spec.md) | `DONB-2`, `DONB-24` (`TASK-1701..1704`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0018`** | [`docs/specs/SPEC-0018-sanctioned-partner-crossmatch/`](../specs/SPEC-0018-sanctioned-partner-crossmatch/spec.md) | `DONB-2`, `DONB-25` (`TASK-1801..1804`) | **Verificado** (`4/4` Test Anchors verdes) |
 
 
 
@@ -77,6 +83,21 @@
 | `SPEC-0016` | `FR-034`, `FR-035`, `NFR-019`, `DATA-018`, `SEC-019` | Conflito de Interesses e Impedimento Legal: Servidores no QSA de Fornecedores do Próprio Órgão (Art. 9º, Lei 14.133/21) | `AC-062`, `AC-063`, `AC-064`, `AC-065` | `TASK-1601`, `TASK-1602`, `TASK-1603`, `TASK-1604` (`DONB-23`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_public_agent_supplier_crossmatch_rule`), `models.py` (`CuratedPublicAgentRecord`) | `test_public_agent_model_validation_and_masking`, `test_public_agent_supplier_rule_detects_conflict_in_same_organ`, `test_public_agent_supplier_rule_ignores_different_organ`, `test_public_agent_supplier_rule_ignores_unrelated_members` | **Verificado** |
 | `SPEC-0017` | `FR-036`, `FR-037`, `NFR-020`, `DATA-019`, `SEC-020` | Indícios de Conluio e Empresas de Fachada: Fornecedores com Mesmo Endereço Físico Contratados pelo Mesmo Órgão | `AC-066`, `AC-067`, `AC-068`, `AC-069` | `TASK-1701`, `TASK-1702`, `TASK-1703`, `TASK-1704` (`DONB-24`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_shared_company_address_rule`), `models.py` (`CuratedCompanyRegistrationRecord`) | `test_company_address_model_validation_and_normalization`, `test_shared_address_rule_detects_multiple_suppliers_at_same_address`, `test_shared_address_rule_ignores_different_address_or_autonomous_units`, `test_shared_address_rule_ignores_different_organs` | **Verificado** |
 | `SPEC-0018` | `FR-038`, `FR-039`, `NFR-021`, `DATA-020`, `SEC-021` | Burla à Sanção Administrativa e Impedimento de Licitar: Sócios e Administradores (QSA) com Sanção no CEIS/CNEP | `AC-070`, `AC-071`, `AC-072`, `AC-073` | `TASK-1801`, `TASK-1802`, `TASK-1803`, `TASK-1804` (`DONB-25`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_sanctioned_partner_supplier_rule`), `models.py` | `test_sanctioned_partner_rule_detects_active_sanction_in_qsa`, `test_sanctioned_partner_rule_ignores_expired_sanction`, `test_sanctioned_partner_rule_ignores_masked_cpf_homonym_without_name_match`, `test_sanctioned_partner_rule_ignores_unrelated_suppliers` | **Verificado** |
+
+---
+
+## 3. Harness e Quality Gates do Antigravity Autonomous Engineering Loop
+
+| Componente | Função | Implementação | Verificação / Teste | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **`ENG-LOOP-01`** | Máquina de Estados e Configuração dos 11 Gates | `.agents/loop/config.json`, `.agents/loop/engine.py` | `tests/test_engineering_loop.py::TestEngineeringLoop::test_state_machine_initial_state_and_config` | **Verificado** |
+| **`ENG-LOOP-02`** | Transições de Gates e Bloqueio Humano (`GATE-04`) | `.agents/loop/engine.py`, `scripts/run_loop.py` | `tests/test_engineering_loop.py::TestEngineeringLoop::test_gate_transitions_and_human_approval_flow` | **Verificado** |
+| **`ENG-LOOP-03`** | Circuit Breaker, Retentativas e Diagnóstico | `.agents/loop/engine.py` | `tests/test_engineering_loop.py::TestEngineeringLoop::test_circuit_breaker_trips_after_max_retries` | **Verificado** |
+| **`ENG-LOOP-04`** | Relatório Estruturado de Introspecção | `.agents/loop/engine.py` | `tests/test_engineering_loop.py::TestEngineeringLoop::test_generate_introspection_report` | **Verificado** |
+| **`ENG-LOOP-05`** | Validação E2E com `agent-browser` | `scripts/run_e2e_browser.py`, `.agents/artifacts/e2e/` | `GATE-07-E2E` (`snapshot -i`, screenshot, `/api/v1/expenses`) | **Verificado** |
+| **`ENG-LOOP-06`** | Auditoria SAST/LGPD de Segurança Estática | `scripts/run_security_audit.py` | `GATE-08-SECURITY` (0 segredos, 0 termos acusatórios, timing safe, SSRF safe) | **Verificado** |
+| **`ENG-LOOP-07`** | Verificação Formal no Harness e CI | `src/deolhonobrasil/harness/runner.py` (Gate 4), `.github/workflows/ci.yml` | `GATE-10-VERIFY` (`runner.py --checkpoint 4 --trials 3`, $pass^3 = 1.0$) | **Verificado** |
+
 
 
 
