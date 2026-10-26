@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 125
+MIN_EXPECTED_UNIT_TESTS = 129
 _IN_HARNESS_TEST_DISCOVERY = False
 
 
@@ -105,6 +105,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0018-sanctioned-partner-crossmatch", "data-model.md"),
         ("SPEC-0019-civic-ui-and-design-system", "data-model.md"),
         ("SPEC-0020-civic-entity-profiles-and-detail-views", "data-model.md"),
+        ("SPEC-0021-civic-watchlists-and-source-catalog", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:
@@ -211,6 +212,8 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
     from deolhonobrasil.governance.dossiers import AuditDossier, VerifiableEvidenceBundle
     from deolhonobrasil.governance.right_of_reply import RightOfReplySubmission
     from deolhonobrasil.pipeline.models import (
+        CivicWatchlistEvent,
+        CivicWatchlistSubscription,
         CuratedCompanyRegistrationRecord,
         CuratedCorporateMemberRecord,
         CuratedElectoralDonation,
@@ -219,6 +222,7 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         CuratedPublicContract,
         CuratedPublicExpense,
         CuratedSanctionRecord,
+        DataSourceSpecification,
         ProvenanceMetadata,
     )
 
@@ -232,6 +236,9 @@ def verify_gateguard_boundaries(repo_root: Path) -> GateResult:
         CuratedCorporateMemberRecord,
         CuratedCompanyRegistrationRecord,
         CuratedPublicAgentRecord,
+        CivicWatchlistSubscription,
+        CivicWatchlistEvent,
+        DataSourceSpecification,
         AuditSignal,
         System1Decision,
         GroundedDossierSection,

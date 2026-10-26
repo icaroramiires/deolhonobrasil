@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 2.0.0  
-**Status:** 100% Verificada (`SPEC-0001..0018` + Engineering Loop Harness, `117/117` testes, `106/106` Test Anchors, `pass^3 = 1.0`)
+**Versão:** 2.3.0  
+**Status:** 100% Verificada (`SPEC-0001..0021` + Engineering Loop Harness, `129/129` testes, `118/118` Test Anchors, `pass^3 = 1.0`)
 
 ---
 
@@ -27,6 +27,9 @@
 | **`SPEC-0016`** | [`docs/specs/SPEC-0016-public-agent-supplier-crossmatch/`](../specs/SPEC-0016-public-agent-supplier-crossmatch/spec.md) | `DONB-2`, `DONB-23` (`TASK-1601..1604`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0017`** | [`docs/specs/SPEC-0017-shared-company-address-crossmatch/`](../specs/SPEC-0017-shared-company-address-crossmatch/spec.md) | `DONB-2`, `DONB-24` (`TASK-1701..1704`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0018`** | [`docs/specs/SPEC-0018-sanctioned-partner-crossmatch/`](../specs/SPEC-0018-sanctioned-partner-crossmatch/spec.md) | `DONB-2`, `DONB-25` (`TASK-1801..1804`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0019`** | [`docs/specs/SPEC-0019-civic-ui-and-design-system/`](../specs/SPEC-0019-civic-ui-and-design-system/spec.md) | `DONB-27` (`TASK-1901..1904`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0020`** | [`docs/specs/SPEC-0020-civic-entity-profiles-and-detail-views/`](../specs/SPEC-0020-civic-entity-profiles-and-detail-views/spec.md) | `DONB-28` (`TASK-2001..2004`) | **Verificado** (`4/4` Test Anchors verdes) |
+| **`SPEC-0021`** | [`docs/specs/SPEC-0021-civic-watchlists-and-source-catalog/`](../specs/SPEC-0021-civic-watchlists-and-source-catalog/spec.md) | `DONB-29` (`TASK-2101..2104`) | **Verificado** (`4/4` Test Anchors verdes) |
 
 
 
@@ -85,6 +88,9 @@
 | `SPEC-0018` | `FR-038`, `FR-039`, `NFR-021`, `DATA-020`, `SEC-021` | Burla à Sanção Administrativa e Impedimento de Licitar: Sócios e Administradores (QSA) com Sanção no CEIS/CNEP | `AC-070`, `AC-071`, `AC-072`, `AC-073` | `TASK-1801`, `TASK-1802`, `TASK-1803`, `TASK-1804` (`DONB-25`) | `src/deolhonobrasil/audit/rules.py` (`evaluate_sanctioned_partner_supplier_rule`), `models.py` | `test_sanctioned_partner_rule_detects_active_sanction_in_qsa`, `test_sanctioned_partner_rule_ignores_expired_sanction`, `test_sanctioned_partner_rule_ignores_masked_cpf_homonym_without_name_match`, `test_sanctioned_partner_rule_ignores_unrelated_suppliers` | **Verificado** |
 | `SPEC-0019` | `FR-040`, `FR-041`, `FR-042`, `NFR-022`, `DATA-021`, `SEC-022` | Interface Web Cívica, Design System Unificado (Tokens, Temas Claro/Escuro, 7 Visões P0) e Visualização de Evidências | `AC-074`, `AC-075`, `AC-076`, `AC-077` | `TASK-1901`, `TASK-1902`, `TASK-1903`, `TASK-1904` (`DONB-27`) | `wireframe_de_olho_no_brasil.html`, `src/deolhonobrasil/api/service.py` | `test_ui_serves_html_with_design_tokens_and_theme_support`, `test_ui_renders_seven_navigation_views_and_search_shortcut`, `test_ui_enforces_epistemic_badges_and_non_accusatory_language`, `test_ui_handles_loading_empty_and_error_states` | **Verificado** |
 | `SPEC-0020` | `FR-043`, `FR-044`, `FR-045`, `NFR-023`, `DATA-022`, `SEC-023` | Perfis Cívicos de Entidades (Fornecedor, Mandatário, Órgão), Modais de Detalhe P0 e Linha do Tempo de Aditivos | `AC-078`, `AC-079`, `AC-080`, `AC-081` | `TASK-2001`, `TASK-2002`, `TASK-2003`, `TASK-2004` (`DONB-28`) | `wireframe_de_olho_no_brasil.html`, `src/deolhonobrasil/pipeline/models.py`, `storage.py`, `service.py` | `test_entity_profiles_render_supplier_agent_and_organ_data`, `test_expense_detail_modal_shows_accounting_stages_and_hash`, `test_contract_detail_modal_renders_amendments_timeline`, `test_analysis_detail_enforces_epistemic_layers_and_a11y` | **Verificado** |
+| `SPEC-0021` | `FR-046`, `DATA-023`, `SEC-024` | Modelagem Imutável e Lakehouse de Assinaturas e Eventos Cívicos | `AC-082`, `AC-083` | `TASK-2101`, `TASK-2102` (`DONB-29`) | `src/deolhonobrasil/pipeline/models.py`, `storage.py` | `test_watchlist_subscription_model_and_event_generation`, `test_storage_watchlist_crud_lifecycle_and_events` | **Verificado** |
+| `SPEC-0021` | `FR-047`, `NFR-024` | Catálogo Oficial de Fontes de Dados (8 Fontes, Cobertura, Limitações) | `AC-084` | `TASK-2103` (`DONB-29`) | `src/deolhonobrasil/pipeline/models.py` (`get_official_data_source_catalog`) | `test_api_watchlist_and_sources_catalog_endpoints` | **Verificado** |
+| `SPEC-0021` | `FR-048`, `SEC-024` | Endpoints REST WSGI e Modais de Acompanhamentos e Catálogo de Metodologia | `AC-085` | `TASK-2104` (`DONB-29`) | `src/deolhonobrasil/api/service.py`, `wireframe_de_olho_no_brasil.html` | `test_api_watchlist_and_sources_catalog_endpoints`, `test_ui_watchlist_and_catalog_markup_and_interactions` | **Verificado** |
 
 ---
 

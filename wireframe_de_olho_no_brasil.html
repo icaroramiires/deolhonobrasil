@@ -1684,7 +1684,94 @@
       </section>
 
       <!-- SCREEN 7: INBOX (Fila de Curadoria e Direito de Resposta / Acompanhamentos) -->
-      <section class="screen-view stack" id="screen-inbox" data-view="acompanhamentos" hidden aria-label="Fila de curadoria e direito de resposta">
+      <section class="screen-view stack" id="screen-inbox" data-view="acompanhamentos" hidden aria-label="Painel de acompanhamentos cívicos e direito de resposta">
+        <div class="screen-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <div>
+            <h2 class="section-title">Acompanhamentos Cívicos & Monitoramento Contínuo</h2>
+            <div class="card-meta">Watchlists ativas de fornecedores, representantes e contratos · Alertas de atos e pagamentos públicos.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-primary" id="btn-open-watchlist-modal">+ Novo Acompanhamento</button>
+            <button type="button" class="btn" id="btn-open-catalog-modal">Catálogo de Fontes & Metodologia</button>
+          </div>
+        </div>
+
+        <div class="grid-detail" style="margin-bottom:20px;">
+          <article class="card card-flush">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Suas Entidades Acompanhadas (Watchlists)</h2>
+                <div class="card-meta">Notificações automáticas de novos empenhos, aditivos e análises</div>
+              </div>
+              <span class="pill pos" id="watchlist-count-badge">3 ativas</span>
+            </div>
+            <div class="table-wrap">
+              <table class="data" aria-label="Tabela de acompanhamentos ativos">
+                <thead>
+                  <tr>
+                    <th>Entidade</th>
+                    <th>Tipo</th>
+                    <th>Frequência</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="watchlist-table-body">
+                  <tr>
+                    <td><strong>Beta Tecnologia e Serviços Ltda</strong><br><code>11.222.333/0001-81</code></td>
+                    <td><span class="pill">FORNECEDOR</span></td>
+                    <td>Diária</td>
+                    <td><span class="pill pos">Ativo</span></td>
+                    <td><button type="button" class="btn btn-sm" onclick="toggleWatchlist('sub-001')">Pausar</button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Ministério da Saúde</strong><br><code>MIN-SAUDE-01</code></td>
+                    <td><span class="pill">ORGAO</span></td>
+                    <td>Imediata</td>
+                    <td><span class="pill pos">Ativo</span></td>
+                    <td><button type="button" class="btn btn-sm" onclick="toggleWatchlist('sub-002')">Pausar</button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Deputado Exemplar</strong><br><code>***.889.123-**</code></td>
+                    <td><span class="pill">MANDATARIO</span></td>
+                    <td>Semanal</td>
+                    <td><span class="pill neu">Pausado</span></td>
+                    <td><button type="button" class="btn btn-sm" onclick="toggleWatchlist('sub-003')">Retomar</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">Feed de Eventos Monitorados</h2>
+                <div class="card-meta">Atos e notas fiscais identificados nas fontes oficiais</div>
+              </div>
+              <span class="pill">Tempo real</span>
+            </div>
+            <div class="epistemic-list" id="watchlist-events-list">
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span><strong>Termo Aditivo Publicado</strong> · Beta Tecnologia</span>
+                  <span class="pill warn">ALTERACAO_VALOR</span>
+                </div>
+                <p class="epistemic-body">Acréscimo de R$ 30.000,00 publicado no PNCP referente ao Contrato CTR-2026-001.</p>
+                <div class="card-meta" style="margin-top:4px;">Hoje às 14:30 BRT · SHA-256: 4b227777d4dd...</div>
+              </div>
+              <div class="epistemic-block">
+                <div class="epistemic-head">
+                  <span><strong>Despesa Liquidada</strong> · Gabinete Parlamentar</span>
+                  <span class="pill pos">NOVO_PAGAMENTO</span>
+                </div>
+                <p class="epistemic-body">Reembolso de R$ 4.500,00 aprovado pela Câmara dos Deputados (CEAP).</p>
+                <div class="card-meta" style="margin-top:4px;">Ontem às 18:10 BRT · SHA-256: 8d41a0607a14...</div>
+              </div>
+            </div>
+          </article>
+        </div>
+
         <div class="grid-detail">
           <article class="card card-flush">
             <div class="card-head">
@@ -1803,6 +1890,136 @@
                 <div style="font-weight: 600;">Descrição do termo aditivo ou evento contratual</div>
               </li>
             </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPEC-0021: Civic Watchlists Modal -->
+      <div id="modal-watchlist" class="civic-modal-backdrop civic-modal" role="dialog" aria-modal="true" aria-labelledby="modal-watchlist-title" style="display:none;">
+        <div class="civic-modal-dialog" tabindex="-1">
+          <button type="button" class="civic-modal-close" aria-label="Fechar modal de acompanhamento (Escape)" id="modal-watchlist-close-btn">&times;</button>
+          <h2 id="modal-watchlist-title">Configurar Novo Acompanhamento Cívico</h2>
+          <p class="card-meta">Monitore proativamente publicações, pagamentos, aditivos e análises de entidades públicas de interesse.</p>
+          <form id="form-watchlist" style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+            <label>
+              <span class="kv-label">Tipo de Entidade</span>
+              <select id="wl-entity-type" class="ctrl-select" style="width:100%;">
+                <option value="FORNECEDOR">Fornecedor (Pessoa Jurídica ou Física)</option>
+                <option value="MANDATARIO">Mandatário / Representante Eleito</option>
+                <option value="ORGAO">Órgão Público Contratante</option>
+                <option value="CONTRATO">Instrumento de Contrato (PNCP)</option>
+                <option value="DOSSIE">Dossiê de Verificação Técnica</option>
+              </select>
+            </label>
+            <label>
+              <span class="kv-label">Identificador Oficial (CNPJ, Código do Órgão, ID do Mandatário ou Contrato)</span>
+              <input type="text" id="wl-entity-id" class="ctrl-input" placeholder="Ex: 11.222.333/0001-81 ou DEP-101" required style="width:100%;">
+            </label>
+            <label>
+              <span class="kv-label">Nome / Descrição da Entidade</span>
+              <input type="text" id="wl-entity-name" class="ctrl-input" placeholder="Ex: Beta Tecnologia ou Ministério da Saúde" required style="width:100%;">
+            </label>
+            <fieldset style="border:1px solid var(--border); border-radius:var(--radius-card); padding:10px;">
+              <legend class="kv-label" style="padding:0 4px;">Eventos Monitorados</legend>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">
+                <label><input type="checkbox" name="wl-event" value="NOVO_DOCUMENTO" checked> Novo Documento / Nota Fiscal</label>
+                <label><input type="checkbox" name="wl-event" value="ALTERACAO_VALOR" checked> Alteração de Valor / Termo Aditivo</label>
+                <label><input type="checkbox" name="wl-event" value="NOVO_PAGAMENTO" checked> Novo Pagamento / Liquidação</label>
+                <label><input type="checkbox" name="wl-event" value="NOVA_ANALISE" checked> Novo Sinal de Auditoria</label>
+                <label><input type="checkbox" name="wl-event" value="RESPOSTA_CONTESTACAO" checked> Direito de Resposta Protocolado</label>
+              </div>
+            </fieldset>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <label>
+                <span class="kv-label">Frequência de Notificação</span>
+                <select id="wl-frequency" class="ctrl-select" style="width:100%;">
+                  <option value="IMEDIATA">Imediata (Tempo Real)</option>
+                  <option value="DIARIA" selected>Diária (Resumo Consolidado)</option>
+                  <option value="SEMANAL">Semanal (Boletim Informativo)</option>
+                </select>
+              </label>
+              <label>
+                <span class="kv-label">Canal de Entrega</span>
+                <select id="wl-channel" class="ctrl-select" style="width:100%;">
+                  <option value="NAVEGADOR_LOCAL" selected>Navegador Local (Feed & Alertas)</option>
+                  <option value="WEBHOOK_CADASTRADO">Webhook Local Cadastrado</option>
+                </select>
+              </label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+              <button type="button" class="btn" id="modal-watchlist-cancel-btn">Cancelar</button>
+              <button type="submit" class="btn btn-primary" id="modal-watchlist-save-btn">Salvar Acompanhamento</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- SPEC-0021: Data Sources & Methodology Catalog Modal -->
+      <div id="modal-catalog" class="civic-modal-backdrop civic-modal" role="dialog" aria-modal="true" aria-labelledby="modal-catalog-title" style="display:none;">
+        <div class="civic-modal-dialog" style="max-width:850px;" tabindex="-1">
+          <button type="button" class="civic-modal-close" aria-label="Fechar catálogo de fontes (Escape)" id="modal-catalog-close-btn">&times;</button>
+          <h2 id="modal-catalog-title">Catálogo Oficial de Fontes de Dados e Metodologia</h2>
+          <p class="card-meta">Transparência ativa sobre os 8 órgãos custodiantes, periodicidade, regras de sanitização LGPD e limites analíticos.</p>
+          <div id="catalog-grid" style="display:flex; flex-direction:column; gap:16px; margin-top:16px;">
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>CAMARA_CEAP</strong> · Cota para o Exercício da Atividade Parlamentar</span>
+                <span class="pill pos">Diária · Federal</span>
+              </div>
+              <p class="epistemic-body">Câmara dos Deputados (dadosabertos.camara.leg.br). Gastos de alimentação, transporte, divulgação e consultoria com mascaramento de CPF e proveniência SHA-256.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>SENADO_CEAPS</strong> · Cota Parlamentar dos Senadores</span>
+                <span class="pill pos">Diária · Federal</span>
+              </div>
+              <p class="epistemic-body">Senado Federal (legis.senado.leg.br/dadosabertos). Reembolsos e cotas parlamentares de senadores.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>CGU_EMENDAS</strong> · Emendas Parlamentares e Transferências</span>
+                <span class="pill pos">Diária · Nacional</span>
+              </div>
+              <p class="epistemic-body">Controladoria-Geral da União (portaldatransparencia.gov.br). Valores empenhados, liquidados e pagos de transferências especiais.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>PNCP_CONTRATOS</strong> · Portal Nacional de Contratações Públicas</span>
+                <span class="pill pos">Diária · Nacional</span>
+              </div>
+              <p class="epistemic-body">MGI (pncp.gov.br). Instrumentos de contratos, editais e termos aditivos com histórico de valores.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>CGU_CEIS</strong> · Cadastro de Empresas Inidôneas e Suspensas</span>
+                <span class="pill warn">Diária · Sancionatório</span>
+              </div>
+              <p class="epistemic-body">CGU (portaldatransparencia.gov.br/sancoes/ceis). Sanções vigentes de impedimento de licitar e contratar.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>CGU_CNEP</strong> · Cadastro Nacional de Empresas Punidas</span>
+                <span class="pill warn">Diária · Lei Anticorrupção</span>
+              </div>
+              <p class="epistemic-body">CGU. Punições administrativas definitivas aplicadas pela Lei nº 12.846/2013.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>TSE_ELEICOES</strong> · Prestação de Contas Eleitorais</span>
+                <span class="pill pos">Semanal · Nacional</span>
+              </div>
+              <p class="epistemic-body">Tribunal Superior Eleitoral (dadosabertos.tse.jus.br). Doações oficiais de campanha de pessoas físicas a candidatos.</p>
+            </div>
+            <div class="epistemic-block">
+              <div class="epistemic-head">
+                <span><strong>RECEITA_FEDERAL_CNPJ</strong> · Dados Cadastrais e QSA</span>
+                <span class="pill pos">Mensal · Nacional</span>
+              </div>
+              <p class="epistemic-body">Receita Federal do Brasil (dados.gov.br). Cadastro de PJ, capital social, atividade econômica (CNAE), endereço e sócios.</p>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+            <button type="button" class="btn btn-primary" id="modal-catalog-dismiss-btn">Fechar Catálogo</button>
           </div>
         </div>
       </div>
@@ -2926,12 +3143,45 @@
       }
     });
 
-    // Modal Accessibility & Escape dismiss (SPEC-0020 / FR-045)
+    // Escape HTML helper to prevent DOM XSS vulnerabilities
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Modal Accessibility, Focus Trap & Escape dismiss (SPEC-0020 & SPEC-0021 / FR-045 / FR-048)
     document.addEventListener('keydown', (e) => {
+      const activeModal = [
+        document.getElementById('civic-modal'),
+        document.getElementById('modal-watchlist'),
+        document.getElementById('modal-catalog'),
+      ].find(m => m && m.style.display !== 'none' && m.style.display !== '');
+
+      if (!activeModal) return;
+
       if (e.key === 'Escape') {
-        const modal = document.getElementById('civic-modal');
-        if (modal && modal.style.display !== 'none') {
-          modal.style.display = 'none';
+        activeModal.style.display = 'none';
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusables = Array.from(
+          activeModal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          last.focus();
+          e.preventDefault();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          first.focus();
+          e.preventDefault();
         }
       }
     });
@@ -2939,6 +3189,68 @@
       const modal = document.getElementById('civic-modal');
       if (modal) modal.style.display = 'none';
     });
+
+    // SPEC-0021: Watchlist & Catalog Modals Interaction
+    function openWatchlistModal(prefillType, prefillId, prefillName) {
+      const modal = document.getElementById('modal-watchlist');
+      if (!modal) return;
+      if (prefillType) document.getElementById('wl-entity-type').value = prefillType;
+      if (prefillId) document.getElementById('wl-entity-id').value = prefillId;
+      if (prefillName) document.getElementById('wl-entity-name').value = prefillName;
+      modal.style.display = 'flex';
+      modal.querySelector('.civic-modal-dialog')?.focus();
+    }
+
+    function closeWatchlistModal() {
+      const modal = document.getElementById('modal-watchlist');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openCatalogModal() {
+      const modal = document.getElementById('modal-catalog');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      modal.querySelector('.civic-modal-dialog')?.focus();
+    }
+
+    function closeCatalogModal() {
+      const modal = document.getElementById('modal-catalog');
+      if (modal) modal.style.display = 'none';
+    }
+
+    document.getElementById('btn-open-watchlist-modal')?.addEventListener('click', () => openWatchlistModal());
+    document.getElementById('btn-open-catalog-modal')?.addEventListener('click', () => openCatalogModal());
+    document.getElementById('modal-watchlist-close-btn')?.addEventListener('click', closeWatchlistModal);
+    document.getElementById('modal-watchlist-cancel-btn')?.addEventListener('click', closeWatchlistModal);
+    document.getElementById('modal-catalog-close-btn')?.addEventListener('click', closeCatalogModal);
+    document.getElementById('modal-catalog-dismiss-btn')?.addEventListener('click', closeCatalogModal);
+
+    document.getElementById('form-watchlist')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const entityType = document.getElementById('wl-entity-type').value;
+      const entityId = document.getElementById('wl-entity-id').value;
+      const entityName = document.getElementById('wl-entity-name').value;
+      const freq = document.getElementById('wl-frequency').value;
+
+      const tbody = document.getElementById('watchlist-table-body');
+      if (tbody) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${escapeHtml(entityName)}</strong><br><code>${escapeHtml(entityId)}</code></td>
+          <td><span class="pill">${escapeHtml(entityType)}</span></td>
+          <td>${freq === 'IMEDIATA' ? 'Imediata' : freq === 'SEMANAL' ? 'Semanal' : 'Diária'}</td>
+          <td><span class="pill pos">Ativo</span></td>
+          <td><button type="button" class="btn btn-sm" onclick="this.closest('tr').remove()">Remover</button></td>
+        `;
+        tbody.prepend(row);
+      }
+      closeWatchlistModal();
+    });
+
+    window.toggleWatchlist = function(subId) {
+      // Toggle logic placeholder for client state
+    };
+
 
     // Initial render
     initDossierPicker();

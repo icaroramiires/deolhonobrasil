@@ -11,7 +11,7 @@ Uma funcionalidade, correção ou Checkpoint no **De Olho no Brasil** **só pode
 2. **Spec Review Gate Aprovado (`review.md`):** Nenhuma questão crítica ou de alta severidade aberta (`Gate Status: APPROVED`).
 3. **Design Técnico e ADRs (`plan.md` + `docs/architecture/adr/`):** Decisões arquiteturais registradas e contratos de dados/APIs documentados.
 4. **Rastreabilidade Ponta a Ponta (`docs/quality/traceability-matrix.md`):** Todo requisito implementado está vinculado a tarefa (`TASK-*` / Jira `DONB-*`), módulo de código (`src/*`) e teste automatizado (`tests/*`).
-5. **TDD e Suíte de Testes 100% Verde:** Todos os testes unitários, de integração e de contrato passam (`PYTHONPATH=src:.agents/loop python3 -m unittest discover -s tests -v`), respeitando o piso anti-regressão `MIN_EXPECTED_UNIT_TESTS >= 125` do GateGuard.
+5. **TDD e Suíte de Testes 100% Verde:** Todos os testes unitários, de integração e de contrato passam (`PYTHONPATH=src:.agents/loop python3 -m unittest discover -s tests -v`), respeitando o piso anti-regressão `MIN_EXPECTED_UNIT_TESTS >= 129` do GateGuard.
 6. **Invariantes Epistêmicas e Léxicas (Zero Linguagem Acusatória):** Separação explícita nas 3 camadas (`[DADO OFICIAL]`, `[INFERÊNCIA ESTATÍSTICA]`, `[HIPÓTESE DE AUDITORIA / LIMITAÇÃO]`) e zero ocorrências de `FORBIDDEN_ACCUSATORY_TERMS`.
 7. **LGPD e Proveniência Criptográfica:** CPFs de pessoas físicas mascarados (`***.XXX.XXX-**`) na ingestão e `SHA-256` preservado em 100% dos registros e sinais de auditoria.
 8. **Reconciliação Contábil Exata:** `BatchReconciliationReport` no backend com `difference == Decimal("0.00")` e `console.assert` no frontend.
