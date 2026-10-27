@@ -215,3 +215,70 @@ CREATE POLICY p_editorial_audit_trail_reviewer_admin
     TO reviewer_admin
     USING (TRUE)
     WITH CHECK (TRUE);
+
+-- ------------------------------------------------------------------------------
+-- 9. Contestação pública (SPEC-0023)
+-- O leitor anônimo não lê o texto livre. A inserção pública só nasce como RECEBIDO.
+-- A aplicação não entrega a chave privilegiada ao navegador.
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS civic_challenges (
+    challenge_id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    status TEXT NOT NULL,
+    related_record_ref TEXT,
+    statement_text TEXT NOT NULL,
+    contact_channel TEXT NOT NULL,
+    received_at_utc TIMESTAMPTZ NOT NULL,
+    internal_target_review_by_utc TIMESTAMPTZ NOT NULL,
+    sha256 TEXT NOT NULL,
+    CONSTRAINT chk_challenge_category CHECK (category IN (
+        'ERRO_FACTUAL', 'DOCUMENTO_INCORRETO', 'DADO_PESSOAL',
+        'DIREITO_AUTORAL', 'ALEGACAO_DIFAMATORIA', 'METODOLOGIA',
+        'SOLICITACAO_LEGAL'
+    )),
+    CONSTRAINT chk_challenge_status CHECK (status IN (
+        'RECEBIDO', 'EM_ANALISE', 'AGUARDANDO_COMPLEMENTO',
+        'DECIDIDO', 'ESCALADO_JURIDICO'
+    ))
+);
+
+CREATE TABLE IF NOT EXISTS civic_challenge_events (
+    event_id TEXT PRIMARY KEY,
+    challenge_id TEXT NOT NULL REFERENCES civic_challenges(challenge_id) ON DELETE RESTRICT,
+    event_type TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    note TEXT NOT NULL,
+    occurred_at_utc TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE civic_challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE civic_challenge_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS p_civic_challenges_public_insert ON civic_challenges;
+CREATE POLICY p_civic_challenges_public_insert
+    ON civic_challenges
+    FOR INSERT
+    TO anon, authenticated, public_reader
+    WITH CHECK (status = 'RECEBIDO');
+
+DROP POLICY IF EXISTS p_civic_challenges_reviewer_admin ON civic_challenges;
+CREATE POLICY p_civic_challenges_reviewer_admin
+    ON civic_challenges
+    FOR ALL
+    TO reviewer_admin
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+DROP POLICY IF EXISTS p_civic_challenge_events_reviewer_admin ON civic_challenge_events;
+CREATE POLICY p_civic_challenge_events_reviewer_admin
+    ON civic_challenge_events
+    FOR SELECT
+    TO reviewer_admin
+    USING (TRUE);
+
+CREATE OR REPLACE VIEW civic_challenges_public AS
+SELECT challenge_id, category, status, received_at_utc, internal_target_review_by_utc
+FROM civic_challenges;
+
+GRANT SELECT ON civic_challenges_public TO anon, authenticated, public_reader;

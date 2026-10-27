@@ -1,7 +1,7 @@
 # De Olho no Brasil — Matriz de Rastreabilidade Oficial (SDD ↔ Jira ↔ Código ↔ Testes)
 
-**Versão:** 2.4.0  
-**Status:** Suíte executada em 26 de outubro de 2026, 19:09 America/Sao_Paulo: `135/135` testes e harness checkpoint 4 com 3 tentativas (`pass_at_1` 1.0, `pass_hat_k` 1.0, 124 âncoras resolvidas). O registro antigo `129/129` não descreve esta árvore.
+**Versão:** 2.5.0  
+**Status:** Suíte executada em 26 de outubro de 2026, 21:11 (America/Sao_Paulo): `140/140` testes e harness checkpoint 4 com 3 tentativas (`pass_at_1` 1.0, `pass_hat_k` 1.0, 129 âncoras resolvidas).
 
 ---
 
@@ -31,6 +31,7 @@
 | **`SPEC-0020`** | [`docs/specs/SPEC-0020-civic-entity-profiles-and-detail-views/`](../specs/SPEC-0020-civic-entity-profiles-and-detail-views/spec.md) | `DONB-28` (`TASK-2001..2004`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0021`** | [`docs/specs/SPEC-0021-civic-watchlists-and-source-catalog/`](../specs/SPEC-0021-civic-watchlists-and-source-catalog/spec.md) | `DONB-29` (`TASK-2101..2104`) | **Verificado** (`4/4` Test Anchors verdes) |
 | **`SPEC-0022`** | [`docs/specs/SPEC-0022-public-coverage-and-grounded-questions/`](../specs/SPEC-0022-public-coverage-and-grounded-questions/spec.md) | Sem issue Jira. `TASK-2201..2204` são identificadores locais. O MCP Atlassian não foi autenticado | **Verificado** na suíte de 26 de outubro de 2026, 19:09 America/Sao_Paulo (`6/6` âncoras) |
+| **`SPEC-0023`** | [`docs/specs/SPEC-0023-public-challenges/`](../specs/SPEC-0023-public-challenges/spec.md) | Sem issue Jira. `TASK-2301..2303` são identificadores locais | **Verificado** em 26 de outubro de 2026, 21:11 (America/Sao_Paulo) |
 
 
 
@@ -94,6 +95,7 @@
 | `SPEC-0021` | `FR-048`, `SEC-024` | Endpoints REST WSGI e Modais de Acompanhamentos e Catálogo de Metodologia | `AC-085` | `TASK-2104` (`DONB-29`) | `src/deolhonobrasil/api/service.py`, `wireframe_de_olho_no_brasil.html` | `test_api_watchlist_and_sources_catalog_endpoints`, `test_ui_watchlist_and_catalog_markup_and_interactions` | **Verificado** |
 | `SPEC-0022` | `FR-049`, `NFR-025`, `DATA-024` | Cobertura observada em centavos, sem total nacional e sem soma entre ledgers | `AC-086`, `AC-087` | `TASK-2201` (local, sem Jira) | `src/deolhonobrasil/inquiry/coverage.py` | `test_empty_lakehouse_coverage_is_zero_and_states_the_limitation`, `test_persisted_expense_totals_reconcile_by_source_in_cents` | **Verificado** |
 | `SPEC-0022` | `FR-050`, `SEC-025` | Perguntas determinísticas, inconclusão sem linha, bloqueio de linguagem vedada e ocultação da triagem | `AC-088`, `AC-089`, `AC-090`, `AC-091` | `TASK-2202`, `TASK-2203` (locais, sem Jira) | `src/deolhonobrasil/inquiry/coverage.py`, `src/deolhonobrasil/api/service.py`, `wireframe_de_olho_no_brasil.html` | `test_grounded_question_returns_category_total_from_stored_rows`, `test_unknown_category_and_prompt_injection_stay_inconclusive`, `test_public_pending_question_hides_internal_triage_title`, `test_http_routes_and_wireframe_label_sample_figures` | **Verificado** |
+| `SPEC-0023` | `FR-051`, `FR-052`, `NFR-026`, `DATA-025`, `SEC-026` | Protocolo de contestação sem publicação do texto e com eventos imutáveis | `AC-092`, `AC-093`, `AC-094`, `AC-095`, `AC-096`, `AC-097` | `TASK-2301`, `TASK-2302`, `TASK-2303` (locais, sem Jira) | `src/deolhonobrasil/governance/challenges.py`, `api/service.py`, `rls_policies.sql`, `wireframe_de_olho_no_brasil.html` | `test_submission_masks_cpf_and_starts_received`, `test_public_read_hides_statement_even_when_it_quotes_a_forbidden_term`, `test_decision_appends_event_and_received_text_cannot_be_rewritten_or_deleted`, `test_decision_note_rejects_forbidden_language_and_invalid_contact`, `test_http_routes_require_admin_token_for_the_full_record` | **Verificado** |
 
 ---
 

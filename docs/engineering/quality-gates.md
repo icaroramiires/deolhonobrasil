@@ -1,6 +1,6 @@
 # Portões de qualidade
 
-O harness em `src/deolhonobrasil/harness/runner.py` verifica pacotes de especificação, âncoras de teste e um mínimo de testes que não pode cair. O mínimo atual do código é 135, depois da inclusão de `SPEC-0022`.
+O harness em `src/deolhonobrasil/harness/runner.py` verifica pacotes de especificação, âncoras de teste e um mínimo de testes que não pode cair. O mínimo atual do código é 140, depois da inclusão de `SPEC-0022` e `SPEC-0023`.
 
 O workflow `.github/workflows/ci.yml` executa, em pull request e nas branches `main` e `develop`:
 

@@ -28,7 +28,7 @@ from deolhonobrasil.pipeline.cli import run_sample_pipeline
 from deolhonobrasil.pipeline.models import FORBIDDEN_ACCUSATORY_TERMS
 
 
-MIN_EXPECTED_UNIT_TESTS = 135
+MIN_EXPECTED_UNIT_TESTS = 140
 _IN_HARNESS_TEST_DISCOVERY = False
 
 
@@ -107,6 +107,7 @@ def verify_openspec_traceability(repo_root: Path) -> GateResult:
         ("SPEC-0020-civic-entity-profiles-and-detail-views", "data-model.md"),
         ("SPEC-0021-civic-watchlists-and-source-catalog", "data-model.md"),
         ("SPEC-0022-public-coverage-and-grounded-questions", "api-contracts.md"),
+        ("SPEC-0023-public-challenges", "data-model.md"),
     )
 
     for spec_folder, contract_file in expected_specs:

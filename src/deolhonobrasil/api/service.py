@@ -607,6 +607,58 @@ class CivicAuditAPIService:
         question = payload.get("question", "") if isinstance(payload, dict) else ""
         return answer_grounded_question(self.storage, str(question))
 
+    def _admin_authorized(self, provided_admin_token: str | None) -> bool:
+        return bool(
+            self.admin_token
+            and provided_admin_token
+            and hmac.compare_digest(self.admin_token, provided_admin_token)
+        )
+
+    def submit_challenge(self, payload: dict[str, Any]) -> tuple[int, dict[str, object]]:
+        from deolhonobrasil.governance.challenges import submit_challenge
+
+        return submit_challenge(self.storage, payload if isinstance(payload, dict) else {})
+
+    def get_public_challenge(self, challenge_id: str) -> tuple[int, dict[str, object]]:
+        from deolhonobrasil.governance.challenges import get_public_challenge
+
+        return get_public_challenge(self.storage, challenge_id)
+
+    def get_admin_challenge(
+        self,
+        challenge_id: str,
+        *,
+        provided_admin_token: str | None,
+    ) -> tuple[int, dict[str, object]]:
+        if not self._admin_authorized(provided_admin_token):
+            return 403, {
+                "error": "FORBIDDEN",
+                "detail": "A leitura integral da contestação exige X-Admin-Token válido.",
+            }
+        from deolhonobrasil.governance.challenges import get_admin_challenge
+
+        return get_admin_challenge(self.storage, challenge_id)
+
+    def decide_challenge(
+        self,
+        payload: dict[str, Any],
+        *,
+        provided_admin_token: str | None,
+    ) -> tuple[int, dict[str, object]]:
+        if not self._admin_authorized(provided_admin_token):
+            return 403, {
+                "error": "FORBIDDEN",
+                "detail": "A decisão de contestação exige X-Admin-Token válido.",
+            }
+        from deolhonobrasil.governance.challenges import decide_challenge
+
+        body = payload if isinstance(payload, dict) else {}
+        return decide_challenge(
+            self.storage,
+            body,
+            actor_id=str(body.get("actor_id", "")),
+        )
+
     def list_watchlists(self) -> tuple[int, dict[str, object]]:
         subs = self.storage.list_watchlist_subscriptions()
         events = self.storage.list_watchlist_events(limit=50)
@@ -938,6 +990,29 @@ class CivicAuditHTTPApp:
 
         if upper_method == "POST" and clean_path == "/api/v1/questions":
             code, payload = self.service.ask_grounded_question(json_body or {})
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/challenges":
+            code, payload = self.service.submit_challenge(json_body or {})
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path.startswith("/api/v1/challenges/"):
+            challenge_id = clean_path.removeprefix("/api/v1/challenges/").strip()
+            code, payload = self.service.get_public_challenge(challenge_id)
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "GET" and clean_path == "/api/v1/admin/challenges":
+            code, payload = self.service.get_admin_challenge(
+                q.get("id", ""),
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
+            return APIResponse(status_code=code, body=payload, headers=resp_headers)
+
+        if upper_method == "POST" and clean_path == "/api/v1/admin/challenges/decide":
+            code, payload = self.service.decide_challenge(
+                json_body or {},
+                provided_admin_token=req_headers.get("x-admin-token"),
+            )
             return APIResponse(status_code=code, body=payload, headers=resp_headers)
 
         if upper_method == "GET" and clean_path == "/api/v1/watchlists":

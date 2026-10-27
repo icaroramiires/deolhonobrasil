@@ -370,6 +370,62 @@ class CivicLakehouseStorage:
 
                 CREATE INDEX IF NOT EXISTS idx_watchlist_events_sub 
                     ON lakehouse_watchlist_events(subscription_id, occurred_at);
+
+                CREATE TABLE IF NOT EXISTS civic_challenges (
+                    challenge_id TEXT PRIMARY KEY,
+                    category TEXT NOT NULL CHECK(category IN (
+                        'ERRO_FACTUAL', 'DOCUMENTO_INCORRETO', 'DADO_PESSOAL',
+                        'DIREITO_AUTORAL', 'ALEGACAO_DIFAMATORIA', 'METODOLOGIA',
+                        'SOLICITACAO_LEGAL'
+                    )),
+                    status TEXT NOT NULL CHECK(status IN (
+                        'RECEBIDO', 'EM_ANALISE', 'AGUARDANDO_COMPLEMENTO',
+                        'DECIDIDO', 'ESCALADO_JURIDICO'
+                    )),
+                    related_record_ref TEXT,
+                    statement_text TEXT NOT NULL,
+                    contact_channel TEXT NOT NULL,
+                    received_at_utc TEXT NOT NULL,
+                    internal_target_review_by_utc TEXT NOT NULL,
+                    sha256 TEXT NOT NULL CHECK(length(sha256) = 64)
+                );
+
+                CREATE TABLE IF NOT EXISTS civic_challenge_events (
+                    event_id TEXT PRIMARY KEY,
+                    challenge_id TEXT NOT NULL REFERENCES civic_challenges(challenge_id),
+                    event_type TEXT NOT NULL,
+                    actor_id TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    occurred_at_utc TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_civic_challenge_events
+                    ON civic_challenge_events(challenge_id, occurred_at_utc);
+
+                CREATE TRIGGER IF NOT EXISTS trg_prevent_challenge_core_update
+                BEFORE UPDATE OF statement_text, category, related_record_ref, received_at_utc, sha256
+                ON civic_challenges
+                BEGIN
+                    SELECT RAISE(ABORT, 'O conteúdo recebido da contestação não pode ser alterado.');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS trg_prevent_challenge_delete
+                BEFORE DELETE ON civic_challenges
+                BEGIN
+                    SELECT RAISE(ABORT, 'Contestação não pode ser apagada.');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS trg_prevent_challenge_event_update
+                BEFORE UPDATE ON civic_challenge_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'Eventos de contestação são imutáveis.');
+                END;
+
+                CREATE TRIGGER IF NOT EXISTS trg_prevent_challenge_event_delete
+                BEFORE DELETE ON civic_challenge_events
+                BEGIN
+                    SELECT RAISE(ABORT, 'Eventos de contestação são imutáveis.');
+                END;
                 """
             )
 

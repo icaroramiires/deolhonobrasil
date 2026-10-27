@@ -34,7 +34,7 @@ Dados oficiais de gasto público estão dispersos, usam formatos diferentes e n�
 - Terraform e Cloud Run. Não há provedor de nuvem configurado e nenhum recurso pago foi criado.
 - OCR, PDF digitalizado e conectores municipais.
 - Notificação externa de acompanhamentos. O canal implementado é local ou webhook informado pelo próprio registro, sem provedor de e-mail configurado.
-- Contestação como fluxo distinto do direito de resposta já existente, com prazos legais operados por pessoas autorizadas. O protocolo técnico existe; a operação humana não foi ensaiada.
+- Fila humana da contestação. O protocolo técnico de `SPEC-0023` registra o pedido e a meta interna de triagem; não há operador designado nem prazo legal automatizado.
 - Sincronização com Jira e Confluence. O MCP Atlassian desta execução pedia autenticação.
 
 ## Critério de pronto de um requisito novo

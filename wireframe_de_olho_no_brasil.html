@@ -1035,6 +1035,35 @@
           <p id="grounded-answer" aria-live="polite"></p>
         </article>
 
+        <article class="card" id="public-challenge" aria-label="Comunicar erro ou contestação">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Comunicar um erro ou uma contestação</h2>
+              <p class="card-meta">O texto fica no protocolo interno. Ele não é publicado automaticamente e não apaga registros.</p>
+            </div>
+          </div>
+          <form id="form-public-challenge">
+            <label for="challenge-category">Tipo do pedido</label>
+            <select class="input" id="challenge-category" name="category">
+              <option value="ERRO_FACTUAL">Erro factual</option>
+              <option value="DOCUMENTO_INCORRETO">Documento desatualizado</option>
+              <option value="DADO_PESSOAL">Dado pessoal exposto</option>
+              <option value="DIREITO_AUTORAL">Direito autoral</option>
+              <option value="ALEGACAO_DIFAMATORIA">Texto publicado que precisa de revisão</option>
+              <option value="METODOLOGIA">Metodologia</option>
+              <option value="SOLICITACAO_LEGAL">Solicitação de autoridade</option>
+            </select>
+            <label for="challenge-related">Registro relacionado, se houver</label>
+            <input class="input" id="challenge-related" name="related_record_ref" type="text" maxlength="180">
+            <label for="challenge-statement">Descrição</label>
+            <textarea class="input" id="challenge-statement" name="statement" maxlength="4000" required></textarea>
+            <label for="challenge-contact">E-mail de contato, opcional</label>
+            <input class="input" id="challenge-contact" name="contact" type="email" maxlength="120">
+            <button type="submit" class="btn btn-primary">Registrar protocolo</button>
+          </form>
+          <p id="challenge-result" aria-live="polite"></p>
+        </article>
+
         <div class="kpis" role="region" aria-label="Saldos consolidados da base cívica">
           <div class="kpi">
             <div class="kpi-label">Volume federal conciliado</div>
@@ -3324,6 +3353,33 @@
         output.textContent = (data.answer_pt_br || "Sem resposta.") + (limits ? " " + limits : "");
       } catch (err) {
         output.textContent = "A consulta local não pôde ser concluída.";
+      }
+    });
+
+    document.getElementById("form-public-challenge")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const output = document.getElementById("challenge-result");
+      if (!output) return;
+      output.textContent = "Registrando o protocolo.";
+      try {
+        const response = await fetch("/api/v1/challenges", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            category: document.getElementById("challenge-category").value,
+            related_record_ref: document.getElementById("challenge-related").value,
+            statement: document.getElementById("challenge-statement").value,
+            contact: document.getElementById("challenge-contact").value,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          output.textContent = data.detail || "O protocolo não foi aceito.";
+          return;
+        }
+        output.textContent = "Protocolo " + data.challenge_id + ". " + (data.message || "");
+      } catch (err) {
+        output.textContent = "O protocolo não pôde ser registrado.";
       }
     });
 
