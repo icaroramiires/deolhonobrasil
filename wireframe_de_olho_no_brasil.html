@@ -992,7 +992,7 @@
       <div class="page-head">
         <div>
           <h1 id="screen-title">Execução orçamentária e sinais de auditoria</h1>
-          <p class="sub" id="screen-sub">Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.</p>
+          <p class="sub" id="screen-sub">Amostra ilustrativa do wireframe. Os totais deste ambiente aparecem em Cobertura observada.</p>
         </div>
         <div class="head-actions">
           <div class="seg" role="tablist" aria-label="Exercício fiscal">
@@ -1019,6 +1019,51 @@
           <span class="badge badge-reviewed">Revisado</span>
         </div>
 
+        <article class="card" id="observed-coverage" aria-label="Cobertura observada neste ambiente">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Cobertura observada neste ambiente</h2>
+              <p class="card-meta">Calculada somente com os registros persistidos no lakehouse. Os valores em milhões nos cartões abaixo são amostra ilustrativa do wireframe.</p>
+            </div>
+          </div>
+          <p id="observed-coverage-body">Carregando a cobertura observada deste ambiente.</p>
+          <form id="form-grounded-question">
+            <label for="grounded-question">Pergunta sobre os dados deste ambiente</label>
+            <input class="input" id="grounded-question" name="question" type="text" maxlength="500" placeholder="Quanto foi gasto nesta categoria no período?">
+            <button type="submit" class="btn btn-primary">Consultar dados locais</button>
+          </form>
+          <p id="grounded-answer" aria-live="polite"></p>
+        </article>
+
+        <article class="card" id="public-challenge" aria-label="Comunicar erro ou contestação">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Comunicar um erro ou uma contestação</h2>
+              <p class="card-meta">O texto fica no protocolo interno. Ele não é publicado automaticamente e não apaga registros.</p>
+            </div>
+          </div>
+          <form id="form-public-challenge">
+            <label for="challenge-category">Tipo do pedido</label>
+            <select class="input" id="challenge-category" name="category">
+              <option value="ERRO_FACTUAL">Erro factual</option>
+              <option value="DOCUMENTO_INCORRETO">Documento desatualizado</option>
+              <option value="DADO_PESSOAL">Dado pessoal exposto</option>
+              <option value="DIREITO_AUTORAL">Direito autoral</option>
+              <option value="ALEGACAO_DIFAMATORIA">Texto publicado que precisa de revisão</option>
+              <option value="METODOLOGIA">Metodologia</option>
+              <option value="SOLICITACAO_LEGAL">Solicitação de autoridade</option>
+            </select>
+            <label for="challenge-related">Registro relacionado, se houver</label>
+            <input class="input" id="challenge-related" name="related_record_ref" type="text" maxlength="180">
+            <label for="challenge-statement">Descrição</label>
+            <textarea class="input" id="challenge-statement" name="statement" maxlength="4000" required></textarea>
+            <label for="challenge-contact">E-mail de contato, opcional</label>
+            <input class="input" id="challenge-contact" name="contact" type="email" maxlength="120">
+            <button type="submit" class="btn btn-primary">Registrar protocolo</button>
+          </form>
+          <p id="challenge-result" aria-live="polite"></p>
+        </article>
+
         <div class="kpis" role="region" aria-label="Saldos consolidados da base cívica">
           <div class="kpi">
             <div class="kpi-label">Volume federal conciliado</div>
@@ -1026,7 +1071,7 @@
               <span class="kpi-value money">R$ 154,20 mi</span>
               <span class="delta up">+4,2%</span>
             </div>
-            <div class="kpi-sub">Soma exata das fontes oficiais</div>
+            <div class="kpi-sub">Amostra ilustrativa do wireframe, não é o total deste ambiente</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Registros com prova SHA-256</div>
@@ -1042,14 +1087,14 @@
               <span class="kpi-value">20 regras</span>
               <span class="delta down">20 dossiês</span>
             </div>
-            <div class="kpi-sub">Triagem Laya ONNX (System 1)</div>
+            <div class="kpi-sub">Amostra ilustrativa. Publicação nominal exige revisão humana</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Divergência de conciliação</div>
             <div class="kpi-row">
               <span class="kpi-value zero">R$ 0,00</span>
             </div>
-            <div class="kpi-sub">Próxima coleta automática às 03:00 BRT</div>
+            <div class="kpi-sub">Horário de coleta não verificado neste ambiente</div>
           </div>
         </div>
 
@@ -2846,11 +2891,11 @@
     const SCREEN_META = {
       inicio: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Amostra ilustrativa do wireframe. Os totais deste ambiente aparecem em Cobertura observada.'
       },
       overview: {
         title: 'Execução orçamentária e sinais de auditoria',
-        sub: 'Esfera Federal · 42.850 documentos fiscais conciliados · 20 regras auditadas em triagem técnica e R$ 0,00 de divergência.'
+        sub: 'Amostra ilustrativa do wireframe. Os totais deste ambiente aparecem em Cobertura observada.'
       },
       pesquisa: {
         title: 'Pesquisa cívica global',
@@ -3251,6 +3296,94 @@
       // Toggle logic placeholder for client state
     };
 
+
+    function centsLabel(cents) {
+      const parsed = Number(cents);
+      if (!Number.isFinite(parsed)) return "indisponível";
+      const negative = parsed < 0;
+      const abs = Math.abs(Math.trunc(parsed));
+      const reais = Math.floor(abs / 100).toString();
+      const centavos = String(abs % 100).padStart(2, "0");
+      return (negative ? "-" : "") + reais + "," + centavos + " BRL";
+    }
+
+    async function loadObservedCoverage() {
+      const body = document.getElementById("observed-coverage-body");
+      if (!body) return;
+      try {
+        const response = await fetch("/api/v1/public-coverage", { headers: { Accept: "application/json" } });
+        if (!response.ok) throw new Error(String(response.status));
+        const data = await response.json();
+        const expenses = data.expenses || {};
+        const contracts = data.contracts || {};
+        const amendments = data.amendments || {};
+        const sanctions = data.sanctions || {};
+        const lines = [
+          "Despesas locais: " + (expenses.record_count ?? 0) + " registro(s), " + centsLabel(expenses.net_amount_cents) + ".",
+          "Contratos locais: " + (contracts.record_count ?? 0) + " registro(s), valor vigente " + centsLabel(contracts.current_amount_cents) + ".",
+          "Emendas locais: " + (amendments.record_count ?? 0) + " registro(s), pago " + centsLabel(amendments.paid_amount_cents) + ".",
+          "Sanções locais: " + (sanctions.record_count ?? 0) + " registro(s). Esta contagem não entra na soma de despesas.",
+          "Estes conjuntos não são somados entre si e não representam o gasto público nacional.",
+        ];
+        (data.limitations || []).forEach((item) => lines.push(String(item)));
+        body.textContent = lines.join(" ");
+      } catch (err) {
+        body.textContent = "A cobertura observada deste ambiente não pôde ser carregada. Os cartões numéricos são amostra ilustrativa do wireframe, não um total nacional.";
+      }
+    }
+
+    document.getElementById("form-grounded-question")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const output = document.getElementById("grounded-answer");
+      const field = document.getElementById("grounded-question");
+      if (!output || !field) return;
+      output.textContent = "Consultando os registros locais.";
+      try {
+        const response = await fetch("/api/v1/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ question: field.value || "" }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          output.textContent = data.detail || "A consulta não foi aceita.";
+          return;
+        }
+        const limits = (data.limitations || []).join(" ");
+        output.textContent = (data.answer_pt_br || "Sem resposta.") + (limits ? " " + limits : "");
+      } catch (err) {
+        output.textContent = "A consulta local não pôde ser concluída.";
+      }
+    });
+
+    document.getElementById("form-public-challenge")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const output = document.getElementById("challenge-result");
+      if (!output) return;
+      output.textContent = "Registrando o protocolo.";
+      try {
+        const response = await fetch("/api/v1/challenges", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            category: document.getElementById("challenge-category").value,
+            related_record_ref: document.getElementById("challenge-related").value,
+            statement: document.getElementById("challenge-statement").value,
+            contact: document.getElementById("challenge-contact").value,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          output.textContent = data.detail || "O protocolo não foi aceito.";
+          return;
+        }
+        output.textContent = "Protocolo " + data.challenge_id + ". " + (data.message || "");
+      } catch (err) {
+        output.textContent = "O protocolo não pôde ser registrado.";
+      }
+    });
+
+    loadObservedCoverage();
 
     // Initial render
     initDossierPicker();

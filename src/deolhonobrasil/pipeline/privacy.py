@@ -65,6 +65,21 @@ def validate_cpf(cpf_raw: str) -> bool:
     return int(digits[10]) == check_second
 
 
+_FREE_TEXT_CPF_RE = re.compile(r"\b(\d{3})\.?(\d{3})\.?(\d{3})-?(\d{2})\b")
+
+
+def mask_cpf_in_free_text(text: str) -> str:
+    """Mascara CPFs válidos encontrados em texto livre, preservando os 6 dígitos centrais."""
+
+    def _replace(match: re.Match[str]) -> str:
+        digits = "".join(match.groups())
+        if validate_cpf(digits):
+            return f"***.{digits[3:6]}.{digits[6:9]}-**"
+        return match.group(0)
+
+    return _FREE_TEXT_CPF_RE.sub(_replace, text or "")
+
+
 def normalize_and_protect_document(raw_doc: str) -> tuple[str, str]:
     """Normaliza um identificador de fornecedor/favorecido aplicando minimização LGPD.
 
